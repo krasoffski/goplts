@@ -24,14 +24,14 @@ func fetch(w io.Writer) {
 
 		resp, err := http.Get(url)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error getting '%s': %v", url, err)
+			fmt.Fprintf(os.Stderr, "error getting '%s': %v\n", url, err)
 			continue
 		}
 
 		_, err = io.Copy(w, resp.Body)
 		resp.Body.Close()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error printing body for '%s': %v", url, err)
+			fmt.Fprintf(os.Stderr, "error copying body of '%s': %v\n", url, err)
 			continue
 		}
 	}
