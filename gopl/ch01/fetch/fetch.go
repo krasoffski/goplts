@@ -37,7 +37,7 @@ func fetchURL(w io.Writer, url string, body bool, code bool) error {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error getting %s: %v\n", url, err)
+		fmt.Fprintf(os.Stderr, "error getting '%s': %v\n", url, err)
 		return err
 	}
 	defer resp.Body.Close()
