@@ -43,7 +43,7 @@ func fetchURL(w io.Writer, url string, body bool, code bool) error {
 	defer resp.Body.Close()
 
 	if code {
-		fmt.Printf("%3d %s\n", resp.StatusCode, url)
+		fmt.Printf("%3d '%s'\n", resp.StatusCode, url)
 	}
 
 	if body {
