@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"image"
 	"image/color"
 	"image/gif"
@@ -9,13 +10,34 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"net/http"
 	"os"
 	"time"
 )
 
+var web bool
+
+func init() {
+	flag.BoolVar(&web, "web", false, "run web server on :8000")
+}
+
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
+	flag.Parse()
+
+	if web {
+		runServer()
+		return
+	}
 	lissajous(os.Stdout)
+}
+
+func runServer() {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		lissajous(w)
+	}
+	http.HandleFunc("/", handler)
+	log.Fatalln(http.ListenAndServe("localhost:8000", nil))
 }
 
 func lissajous(out io.Writer) {
