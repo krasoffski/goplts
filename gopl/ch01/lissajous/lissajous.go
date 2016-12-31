@@ -15,10 +15,23 @@ import (
 	"time"
 )
 
-var web bool
+var (
+	web     bool
+	res     float64
+	cycles  float64
+	size    int
+	nframes int
+	delay   int
+)
 
 func init() {
 	flag.BoolVar(&web, "web", false, "run web server on :8000")
+	flag.Float64Var(&res, "res", 0.001, "angular resolution")
+	flag.Float64Var(&cycles, "cycles", 5, "number of revolutions")
+	flag.IntVar(&size, "size", 200, "image canvas covers")
+	flag.IntVar(&nframes, "nframes", 64, "number of animation frames")
+	flag.IntVar(&delay, "delay", 64, "delay between frames in 10ms units")
+
 }
 
 func main() {
@@ -26,29 +39,17 @@ func main() {
 	flag.Parse()
 
 	if web {
-		runServer()
+		handler := func(w http.ResponseWriter, r *http.Request) {
+			lissajous(w, res, cycles, size, nframes, delay)
+		}
+		http.HandleFunc("/", handler)
+		log.Fatalln(http.ListenAndServe("localhost:8000", nil))
 		return
 	}
-	lissajous(os.Stdout)
+	lissajous(os.Stdout, res, cycles, size, nframes, delay)
 }
 
-func runServer() {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		lissajous(w)
-	}
-	http.HandleFunc("/", handler)
-	log.Fatalln(http.ListenAndServe("localhost:8000", nil))
-}
-
-func lissajous(out io.Writer) {
-	const (
-		cycles  = 5
-		res     = 0.001
-		size    = 200
-		nframes = 64
-		delay   = 8
-	)
-
+func lissajous(out io.Writer, res, cycles float64, size, nframes, delay int) {
 	freq := rand.Float64() * 3.0
 	anim := gif.GIF{LoopCount: nframes}
 	phase := 0.0
@@ -60,7 +61,9 @@ func lissajous(out io.Writer) {
 		for t := 0.0; t < cycles*2*math.Pi; t += res {
 			x := math.Sin(t)
 			y := math.Sin(t*freq + phase)
-			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5), 1)
+			img.SetColorIndex(
+				size+int(x*float64(size)+0.5),
+				size+int(y*float64(size)+0.5), 1)
 		}
 		phase += 0.1
 		anim.Delay = append(anim.Delay, delay)
