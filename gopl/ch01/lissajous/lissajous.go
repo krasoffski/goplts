@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -39,14 +40,27 @@ func main() {
 	flag.Parse()
 
 	if web {
-		handler := func(w http.ResponseWriter, r *http.Request) {
-			lissajous(w, res, cycles, size, nframes, delay)
-		}
-		http.HandleFunc("/", handler)
-		log.Fatalln(http.ListenAndServe("localhost:8000", nil))
+		serve()
 		return
 	}
 	lissajous(os.Stdout, res, cycles, size, nframes, delay)
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	if qsize := query.Get("size"); qsize != "" {
+		parsed, err := strconv.Atoi(qsize)
+		if err == nil {
+			size = parsed
+		}
+	}
+	lissajous(w, res, cycles, size, nframes, delay)
+}
+
+func serve() {
+	http.HandleFunc("/", handler)
+	log.Fatalln(http.ListenAndServe("localhost:8000", nil))
+
 }
 
 func lissajous(out io.Writer, res, cycles float64, size, nframes, delay int) {
