@@ -3,6 +3,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -47,12 +48,15 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	// TODO: add per request context.
 	query := r.URL.Query()
 	if qsize := query.Get("size"); qsize != "" {
 		parsed, err := strconv.Atoi(qsize)
-		if err == nil {
-			size = parsed
+		if err != nil {
+			fmt.Fprintf(w, "error parsing size paramert: %v", err)
+			return
 		}
+		size = parsed
 	}
 	lissajous(w, res, cycles, size, nframes, delay)
 }
