@@ -3,7 +3,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -53,7 +52,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if qsize := query.Get("size"); qsize != "" {
 		parsed, err := strconv.Atoi(qsize)
 		if err != nil {
-			fmt.Fprintf(w, "error parsing size paramert: %v", err)
+			http.Error(w, "size value error", http.StatusBadRequest)
 			return
 		}
 		size = parsed
