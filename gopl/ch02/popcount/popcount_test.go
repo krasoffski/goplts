@@ -28,20 +28,34 @@ func TestPopCount3(t *testing.T) {
 	}
 }
 
+func TestPopCount4(t *testing.T) {
+	expected := 29
+	res := PopCount4(input29)
+	if res != expected {
+		t.Errorf("expected %d got %d", expected, res)
+	}
+}
+
 func BenchmarkPopCount1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		PopCount1(275032803564053945)
+		PopCount1(input29)
 	}
 }
 
 func BenchmarkPopCount2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		PopCount2(275032803564053945)
+		PopCount2(input29)
 	}
 }
 
 func BenchmarkPopCount3(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		PopCount3(275032803564053945)
+		PopCount3(input29)
+	}
+}
+
+func BenchmarkPopCount4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		PopCount4(input29)
 	}
 }

@@ -37,3 +37,12 @@ func PopCount3(x uint64) int {
 	}
 	return num
 }
+
+func PopCount4(x uint64) int {
+	var num byte
+	var i uint
+	for i = 0; i < 8; i++ {
+		num += pc[byte(x>>(i*8))]
+	}
+	return int(num)
+}
