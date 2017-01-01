@@ -1,8 +1,32 @@
 package popcount
 
-import (
-	"testing"
-)
+import "testing"
+
+const input29 = 275032803564053945
+
+func TestPopCount1(t *testing.T) {
+	expected := 29
+	res := PopCount1(input29)
+	if res != expected {
+		t.Errorf("expected %d got %d", expected, res)
+	}
+}
+
+func TestPopCount2(t *testing.T) {
+	expected := 29
+	res := PopCount2(input29)
+	if res != expected {
+		t.Errorf("expected %d got %d", expected, res)
+	}
+}
+
+func TestPopCount3(t *testing.T) {
+	expected := 29
+	res := PopCount3(input29)
+	if res != expected {
+		t.Errorf("expected %d got %d", expected, res)
+	}
+}
 
 func BenchmarkPopCount1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -12,6 +36,12 @@ func BenchmarkPopCount1(b *testing.B) {
 
 func BenchmarkPopCount2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		PopCount1(275032803564053945)
+		PopCount2(275032803564053945)
+	}
+}
+
+func BenchmarkPopCount3(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		PopCount3(275032803564053945)
 	}
 }

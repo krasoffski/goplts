@@ -22,7 +22,7 @@ func PopCount1(x uint64) int {
 func PopCount2(x uint64) int {
 	num := 0
 	for i := uint8(0); i < 64; i++ {
-		if x&(x<<1) != 0 {
+		if x&(1<<i) != 0 {
 			num++
 		}
 	}
@@ -30,5 +30,10 @@ func PopCount2(x uint64) int {
 }
 
 func PopCount3(x uint64) int {
-
+	num := 0
+	for x != 0 {
+		x = x & (x - 1)
+		num++
+	}
+	return num
 }
