@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	width      = 600
-	height     = 320
-	cells      = 100
-	xyrange    = 3.0
+	width      = 1200
+	height     = 640
+	cells      = 200
+	xyrange    = 30.0
 	xyscale    = width / 2 / xyrange
 	multiplier = 0.4
 	zscale     = height * multiplier
