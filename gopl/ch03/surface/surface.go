@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
 )
 
 const (
 	width      = 600
 	height     = 300
-	cells      = 10
+	cells      = 100
 	xyrange    = 30.0
 	xyscale    = width / 2 / xyrange
 	multiplier = 0.4
@@ -50,6 +49,9 @@ func colorize(z, zmin, zmax float64) colour {
 		c.g = 1 + 4*(zmin+0.75*dz-z)/dz
 		c.b = 0
 	}
+	c.r *= 100
+	c.g *= 100
+	c.b *= 100
 	return c
 }
 
@@ -58,29 +60,28 @@ func main() {
 		"width='%d' height='%d'>\n", width, height)
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			ax, ay := corner(i+1, j)
-			bx, by := corner(i, j)
-			cx, cy := corner(i, j+1)
-			dx, dy := corner(i+1, j+1)
+			ax, ay, ac := corner(i+1, j)
+			bx, by, _ := corner(i, j)
+			cx, cy, _ := corner(i, j+1)
+			dx, dy, _ := corner(i+1, j+1)
 			fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-				"style='stroke:green; fill:rgb(0,0,0); stroke-width:0.7'/>\n",
-				ax, ay, bx, by, cx, cy, dx, dy)
+				"style='stroke:green; fill:rgb(%g%%,%g%%,%g%%); stroke-width:0.7'/>\n",
+				ax, ay, bx, by, cx, cy, dx, dy, ac.r, ac.g, ac.b)
 		}
 	}
 	fmt.Println("</svg>")
 }
 
-func corner(i, j int) (float64, float64) {
+func corner(i, j int) (float64, float64, colour) {
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
 
 	z := f1(x, y)
-	fmt.Fprintf(os.Stderr, "z= %v\n", z)
 
 	sx := width/2 + (x-y)*cos30*xyscale
 	sy := height/2 + (x+y)*sin30*xyscale - z*zscale
 
-	return sx, sy
+	return sx, sy, colorize(z, -0.25, +0.25)
 }
 
 func f1(x, y float64) float64 {
