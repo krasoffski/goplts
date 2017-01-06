@@ -32,7 +32,7 @@ func main() {
 			bx, by, _ := corner(i, j)
 			cx, cy, _ := corner(i, j+1)
 			dx, dy, _ := corner(i+1, j+1)
-			// FIXME: check svg rgb
+			// TODO: figure out better interface for deading with svg rgb.
 			r, g, b := colormap.Scale(az, -0.2, +0.2)
 			fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
 				"style='stroke:green; fill:rgb(%g%%,%g%%,%g%%); stroke-width:0.7'/>\n",
