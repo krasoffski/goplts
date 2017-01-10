@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/krasoffski/gomill/colormap"
+	"github.com/krasoffski/gomill/htcmap"
 )
 
 const (
@@ -28,15 +28,20 @@ func main() {
 		"width='%d' height='%d'>\n", width, height)
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			ax, ay, az := corner(i+1, j)
+			ax, ay, fa := corner(i+1, j)
 			bx, by, _ := corner(i, j)
 			cx, cy, _ := corner(i, j+1)
 			dx, dy, _ := corner(i+1, j+1)
-			// TODO: figure out better interface for deading with svg rgb.
-			r, g, b := colormap.Scale(az, -0.2, +0.2)
+			if math.IsNaN(ax) || math.IsNaN(ay) ||
+				math.IsNaN(bx) || math.IsNaN(by) ||
+				math.IsNaN(cx) || math.IsNaN(cy) ||
+				math.IsNaN(dx) || math.IsNaN(dy) {
+				continue
+			}
+			color := htcmap.AsStr(fa, -0.15, +0.15)
 			fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-				"style='stroke:green; fill:rgb(%g%%,%g%%,%g%%); stroke-width:0.7'/>\n",
-				ax, ay, bx, by, cx, cy, dx, dy, r*100, g*100, b*100)
+				"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
+				ax, ay, bx, by, cx, cy, dx, dy, color)
 		}
 	}
 	fmt.Println("</svg>")
