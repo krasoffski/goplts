@@ -25,11 +25,17 @@ type Point struct {
 	X, Y, Z float64
 }
 
+func (p *Point) Isom() (float64, float64) {
+	sx := width/2 + (p.X-p.Y)*cos30*xyscale
+	sy := height/2 + (p.X+p.Y)*sin30*xyscale - p.Z*zscale
+	return sx, sy
+}
+
 func NewPoint(i, j int, f func(float64, float64) float64) (*Point, error) {
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
 	z := f(x, y)
-	if math.IsNaN(z) {
+	if math.IsNaN(z) || math.IsInf(z, +1) || math.IsInf(z, -1) {
 		return nil, fmt.Errorf("error: function returned non real number")
 	}
 	return &Point{x, y, z}, nil
@@ -39,18 +45,18 @@ type Isometric struct {
 	Sx, Sy float64
 }
 
-func NewIsometric(p Point) Isometric {
+func NewIsometric(p Point) *Isometric {
 	sx := width/2 + (p.X-p.Y)*cos30*xyscale
 	sy := height/2 + (p.X+p.Y)*sin30*xyscale - p.Z*zscale
-	return Isometric{Sx: sx, Sy: sy}
+	return &Isometric{Sx: sx, Sy: sy}
 }
 
-type Polygon struct {
+type IsometricPolygon struct {
 	A, B, C, D Isometric
 	Color      string
 }
 
-func (p *Polygon) String() string {
+func (p *IsometricPolygon) String() string {
 	return fmt.Sprintf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
 		"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
 		p.A.Sx, p.A.Sy, p.B.Sx, p.B.Sy, p.C.Sx, p.C.Sy, p.D.Sx, p.D.Sy, p.Color)
@@ -69,6 +75,10 @@ func main() {
 			_, bErr := NewPoint(i, j, f1)
 			_, cErr := NewPoint(i, j+1, f1)
 			_, dErr := NewPoint(i+1, j+1, f1)
+
+			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
+				continue
+			}
 
 			fmt.Printf("%v %v %v %v\n", aErr, bErr, cErr, dErr)
 
