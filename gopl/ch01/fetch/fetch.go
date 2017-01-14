@@ -58,7 +58,7 @@ func fetchURL(w io.Writer, url string, body bool, code bool) error {
 
 func fetch() {
 	if len(urls) == 0 {
-		fmt.Fprintln(os.Stderr, "error: no urls are spcified")
+		fmt.Fprintln(os.Stderr, "error: no urls are specified")
 		os.Exit(1)
 	}
 
@@ -69,8 +69,8 @@ func fetch() {
 
 func init() {
 	flag.Var(&urls, "url", "url to fetch, multiple allowed")
-	flag.BoolVar(&body, "body", false, "print responce body")
-	flag.BoolVar(&code, "code", true, "print responce statuc code for url")
+	flag.BoolVar(&body, "body", false, "print response body")
+	flag.BoolVar(&code, "code", true, "print response status code for url")
 }
 
 func main() {
