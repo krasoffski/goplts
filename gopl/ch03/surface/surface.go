@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-
-	"github.com/krasoffski/gomill/htcmap"
 )
 
 const (
@@ -23,51 +21,62 @@ var (
 	cos30 = math.Cos(angle)
 )
 
-type point struct {
-	x, y, z float64
+type Point struct {
+	X, Y, Z float64
 }
 
-func (p *point) real() bool {
-	return !math.IsNaN(p.z)
+func NewPoint(i, j int, f func(float64, float64) float64) (*Point, error) {
+	x := xyrange * (float64(i)/cells - 0.5)
+	y := xyrange * (float64(j)/cells - 0.5)
+	z := f(x, y)
+	if math.IsNaN(z) {
+		return nil, fmt.Errorf("error: function returned non real number")
+	}
+	return &Point{x, y, z}, nil
+}
+
+type Isometric struct {
+	Sx, Sy float64
+}
+
+func NewIsometric(p Point) Isometric {
+	sx := width/2 + (p.X-p.Y)*cos30*xyscale
+	sy := height/2 + (p.X+p.Y)*sin30*xyscale - p.Z*zscale
+	return Isometric{Sx: sx, Sy: sy}
+}
+
+type Polygon struct {
+	A, B, C, D Isometric
+	Color      string
+}
+
+func (p *Polygon) String() string {
+	return fmt.Sprintf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
+		"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
+		p.A.Sx, p.A.Sy, p.B.Sx, p.B.Sy, p.C.Sx, p.C.Sy, p.D.Sx, p.D.Sy, p.Color)
 }
 
 func main() {
 	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
 		"width='%d' height='%d'>\n", width, height)
 
-	points := make([]point, 0)
-	var min, max float64
+	// points := make([]Point, 0, cells*cells)
+	// var min, max float64
 
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			ax, ay, az := calculate(i+1, j)
-			bx, by, bz := calculate(i, j)
-			cx, cy, cz := calculate(i, j+1)
-			dx, dy, dz := calculate(i+1, j+1)
+			_, aErr := NewPoint(i+1, j, f1)
+			_, bErr := NewPoint(i, j, f1)
+			_, cErr := NewPoint(i, j+1, f1)
+			_, dErr := NewPoint(i+1, j+1, f1)
 
-			color := htcmap.AsStr((bz+dz)/2, -0.13, +0.13)
+			fmt.Printf("%v %v %v %v\n", aErr, bErr, cErr, dErr)
 
-			fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-				"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
-				ax, ay, bx, by, cx, cy, dx, dy, color)
+			// color := htcmap.AsStr((bz+dz)/2, -0.13, +0.13)
+
 		}
 	}
 	fmt.Println("</svg>")
-}
-
-func calculate(i, j int) (float64, float64, float64) {
-	x := xyrange * (float64(i)/cells - 0.5)
-	y := xyrange * (float64(j)/cells - 0.5)
-
-	z := f1(x, y)
-	return x, y, z
-}
-
-func transform(p point) (float64, float64) {
-	sx := width/2 + (x-y)*cos30*xyscale
-	sy := height/2 + (x+y)*sin30*xyscale - z*zscale
-
-	return sx, sy
 }
 
 func f1(x, y float64) float64 {
