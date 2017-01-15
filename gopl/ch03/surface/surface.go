@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+
+	"github.com/krasoffski/gomill/htcmap"
 )
 
 const (
@@ -68,8 +70,6 @@ func (p *IsometricPolygon) String() string {
 }
 
 func main() {
-	// fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
-	// 	"width='%d' height='%d'>\n", width, height)
 
 	cellPoints := make([][4]*Point, 0, cells*cells)
 	var min, max float64
@@ -89,6 +89,7 @@ func main() {
 				continue
 			}
 			for _, p := range coords {
+				// fmt.Println(p.Z)
 				min = math.Min(min, p.Z)
 				max = math.Max(max, p.Z)
 			}
@@ -100,8 +101,24 @@ func main() {
 		}
 
 	}
-	fmt.Printf("Min: %g, Max: %g\n", min, max)
-	// fmt.Println("</svg>")
+	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
+		"width='%d' height='%d'>\n", width, height)
+
+	for _, arr := range cellPoints {
+		c := htcmap.AsStr(arr[1].Z, min, max)
+		ax, ay := arr[0].Isom()
+		bx, by := arr[1].Isom()
+		cx, cy := arr[2].Isom()
+		dx, dy := arr[3].Isom()
+		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
+			"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
+			ax, ay, bx, by, cx, cy, dx, dy, c)
+
+	}
+
+	// fmt.Printf("Min: %g, Max: %g\n", min, max)
+
+	fmt.Println("</svg>")
 }
 
 func f1(x, y float64) float64 {
