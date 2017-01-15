@@ -3,19 +3,19 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
 
 	"github.com/krasoffski/gomill/htcmap"
 )
 
 const (
-	width      = 600
-	height     = 300
-	cells      = 100
-	xyrange    = 30.0
-	xyscale    = width / 2 / xyrange
-	multiplier = 0.4
-	zscale     = height * multiplier
-	angle      = math.Pi / 6
+	width   = 600
+	height  = 320
+	cells   = 100
+	xyrange = 30.0
+	xyscale = width / 2 / xyrange
+	zscale  = height * 0.4
+	angle   = math.Pi / 6
 )
 
 var (
@@ -28,6 +28,7 @@ type Point struct {
 	X, Y, Z float64
 }
 
+// Isom transforms Point from 3 dimensional system to isometric.
 func (p *Point) Isom() (float64, float64) {
 	sx := width/2 + (p.X-p.Y)*cos30*xyscale
 	sy := height/2 + (p.X+p.Y)*sin30*xyscale - p.Z*zscale
@@ -72,11 +73,9 @@ func (p *IsometricPolygon) String() string {
 func main() {
 
 	cellPoints := make([][4]*Point, 0, cells*cells)
-	var min, max float64
 
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			// TODO: Rework ugly solution and find better names.
 			var coords [4]*Point
 			var aErr, bErr, cErr, dErr error
 			coords[0], aErr = NewPoint(i+1, j, f1)
@@ -84,39 +83,48 @@ func main() {
 			coords[2], cErr = NewPoint(i, j+1, f1)
 			coords[3], dErr = NewPoint(i+1, j+1, f1)
 
-			// Skipping cell with non real points.
+			// Skipping cell with non-real points.
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
 				continue
 			}
-			for _, p := range coords {
-				// fmt.Println(p.Z)
-				min = math.Min(min, p.Z)
-				max = math.Max(max, p.Z)
-			}
+
+			// for _, p := range coords {
+			// 	// fmt.Println(p.Z)
+			// 	min = math.Min(min, p.Z)
+			// 	max = math.Max(max, p.Z)
+			// }
 			cellPoints = append(cellPoints, coords)
-			// fmt.Printf("%v %v %v %v\n", aErr, bErr, cErr, dErr)
-
-			// color := htcmap.AsStr((bz+dz)/2, -0.13, +0.13)
-
 		}
 
+	}
+	if len(cellPoints) == 0 {
+		fmt.Fprintln(os.Stderr, "error: no real points are exist")
+		os.Exit(1)
+	}
+	min, max := cellPoints[0][0].Z, cellPoints[0][0].Z
+	for _, cell := range cellPoints {
+		min = math.Min(min, cell[3].Z)
+		max = math.Max(max, cell[1].Z)
 	}
 	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
 		"width='%d' height='%d'>\n", width, height)
 
 	for _, arr := range cellPoints {
-		c := htcmap.AsStr(arr[1].Z, min, max)
+
 		ax, ay := arr[0].Isom()
 		bx, by := arr[1].Isom()
 		cx, cy := arr[2].Isom()
 		dx, dy := arr[3].Isom()
-		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-			"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
-			ax, ay, bx, by, cx, cy, dx, dy, c)
 
+		avg := (arr[1].Z + arr[3].Z) / 2
+		c := htcmap.AsStr(avg, min, max)
+
+		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
+			"style='stroke:green; fill:%s; stroke-width:0.7'>%g</polygon>\n",
+			ax, ay, bx, by, cx, cy, dx, dy, c, avg)
 	}
 
-	// fmt.Printf("Min: %g, Max: %g\n", min, max)
+	fmt.Fprintf(os.Stderr, "Min: %g, Max: %g\n", min, max)
 
 	fmt.Println("</svg>")
 }
