@@ -21,6 +21,7 @@ var (
 	cos30 = math.Cos(angle)
 )
 
+// Point represents dot on three dimensional system of coordinates
 type Point struct {
 	X, Y, Z float64
 }
@@ -31,7 +32,11 @@ func (p *Point) Isom() (float64, float64) {
 	return sx, sy
 }
 
+// NewPoint transform given cells i and j to coordinates and executes given
+// function of two variables using created coordinates. If successful, a pointer
+// to new Point returned or error in case when function returns non-real value.
 func NewPoint(i, j int, f func(float64, float64) float64) (*Point, error) {
+	// Transforming cell indexes to coordinates.
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
 	z := f(x, y)
@@ -63,30 +68,40 @@ func (p *IsometricPolygon) String() string {
 }
 
 func main() {
-	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
-		"width='%d' height='%d'>\n", width, height)
+	// fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
+	// 	"width='%d' height='%d'>\n", width, height)
 
-	// points := make([]Point, 0, cells*cells)
-	// var min, max float64
+	cellPoints := make([][4]*Point, 0, cells*cells)
+	var min, max float64
 
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			_, aErr := NewPoint(i+1, j, f1)
-			_, bErr := NewPoint(i, j, f1)
-			_, cErr := NewPoint(i, j+1, f1)
-			_, dErr := NewPoint(i+1, j+1, f1)
+			// TODO: Rework ugly solution and find better names.
+			var coords [4]*Point
+			var aErr, bErr, cErr, dErr error
+			coords[0], aErr = NewPoint(i+1, j, f1)
+			coords[1], bErr = NewPoint(i, j, f1)
+			coords[2], cErr = NewPoint(i, j+1, f1)
+			coords[3], dErr = NewPoint(i+1, j+1, f1)
 
+			// Skipping cell with non real points.
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
 				continue
 			}
-
-			fmt.Printf("%v %v %v %v\n", aErr, bErr, cErr, dErr)
+			for _, p := range coords {
+				min = math.Min(min, p.Z)
+				max = math.Max(max, p.Z)
+			}
+			cellPoints = append(cellPoints, coords)
+			// fmt.Printf("%v %v %v %v\n", aErr, bErr, cErr, dErr)
 
 			// color := htcmap.AsStr((bz+dz)/2, -0.13, +0.13)
 
 		}
+
 	}
-	fmt.Println("</svg>")
+	fmt.Printf("Min: %g, Max: %g\n", min, max)
+	// fmt.Println("</svg>")
 }
 
 func f1(x, y float64) float64 {
