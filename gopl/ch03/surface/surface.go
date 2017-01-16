@@ -26,6 +26,7 @@ var (
 // Point represents dot on three dimensional system of coordinates
 type Point struct {
 	X, Y, Z float64
+	I, J    int
 }
 
 // Isom transforms Point from 3 dimensional system to isometric.
@@ -46,7 +47,7 @@ func NewPoint(i, j int, f func(float64, float64) float64) (*Point, error) {
 	if math.IsNaN(z) || math.IsInf(z, +1) || math.IsInf(z, -1) {
 		return nil, fmt.Errorf("error: function returned non real number")
 	}
-	return &Point{x, y, z}, nil
+	return &Point{X: x, Y: y, Z: z, I: i, J: j}, nil
 }
 
 type Isometric struct {
@@ -116,12 +117,16 @@ func main() {
 		cx, cy := arr[2].Isom()
 		dx, dy := arr[3].Isom()
 
-		avg := (arr[1].Z + arr[3].Z) / 2
-		c := htcmap.AsStr(avg, min, max)
+		r, g, b := htcmap.AsFloat(arr[1].Z, min, max)
 
 		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-			"style='stroke:green; fill:%s; stroke-width:0.7'>%g</polygon>\n",
-			ax, ay, bx, by, cx, cy, dx, dy, c, avg)
+			"style='stroke:green; fill:rgb(%g%%,%g%%,%g%%); stroke-width:0.7'>IxJ=%dx%d, avg=%g</polygon>\n",
+			ax, ay, bx, by, cx, cy, dx, dy, r*100, g*100, b*100, arr[1].I, arr[1].J, arr[1].Z)
+
+		// c := htcmap.AsStr(arr[1].Z, min, max)
+		// fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
+		// 	"style='stroke:green; fill:%s; stroke-width:0.7'>IxJ=%dx%d, avg=%g</polygon>\n",
+		// 	ax, ay, bx, by, cx, cy, dx, dy, c, arr[1].I, arr[1].J, arr[1].Z)
 	}
 
 	fmt.Fprintf(os.Stderr, "Min: %g, Max: %g\n", min, max)
