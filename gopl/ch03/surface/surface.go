@@ -88,27 +88,22 @@ func main() {
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
 				continue
 			}
-
-			// for _, p := range coords {
-			// 	// fmt.Println(p.Z)
-			// 	min = math.Min(min, p.Z)
-			// 	max = math.Max(max, p.Z)
-			// }
 			cellPoints = append(cellPoints, coords)
 		}
-
 	}
 	if len(cellPoints) == 0 {
 		fmt.Fprintln(os.Stderr, "error: no real points are exist")
 		os.Exit(1)
 	}
-	min, max := cellPoints[0][0].Z, cellPoints[0][0].Z
+	min, max := cellPoints[0][1].Z, cellPoints[0][1].Z
 	for _, cell := range cellPoints {
-		min = math.Min(min, cell[3].Z)
+		min = math.Min(min, cell[1].Z)
 		max = math.Max(max, cell[1].Z)
 	}
 	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
 		"width='%d' height='%d'>\n", width, height)
+
+	colorRange := htcmap.NewRange(min, max)
 
 	for _, arr := range cellPoints {
 
@@ -117,20 +112,11 @@ func main() {
 		cx, cy := arr[2].Isom()
 		dx, dy := arr[3].Isom()
 
-		r, g, b := htcmap.AsFloat(arr[1].Z, min, max)
-
+		c := colorRange.AsStr(arr[1].Z)
 		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-			"style='stroke:green; fill:rgb(%g%%,%g%%,%g%%); stroke-width:0.7'>IxJ=%dx%d, avg=%g</polygon>\n",
-			ax, ay, bx, by, cx, cy, dx, dy, r*100, g*100, b*100, arr[1].I, arr[1].J, arr[1].Z)
-
-		// c := htcmap.AsStr(arr[1].Z, min, max)
-		// fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-		// 	"style='stroke:green; fill:%s; stroke-width:0.7'>IxJ=%dx%d, avg=%g</polygon>\n",
-		// 	ax, ay, bx, by, cx, cy, dx, dy, c, arr[1].I, arr[1].J, arr[1].Z)
+			"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
+			ax, ay, bx, by, cx, cy, dx, dy, c)
 	}
-
-	fmt.Fprintf(os.Stderr, "Min: %g, Max: %g\n", min, max)
-
 	fmt.Println("</svg>")
 }
 
