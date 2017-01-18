@@ -26,7 +26,6 @@ var (
 // Point represents dot on three dimensional system of coordinates
 type Point struct {
 	X, Y, Z float64
-	I, J    int
 }
 
 // Isom transforms Point from 3 dimensional system to isometric.
@@ -47,14 +46,14 @@ func NewPoint(i, j int, xyrange float64) (*Point, error) {
 	if math.IsNaN(z) || math.IsInf(z, +1) || math.IsInf(z, -1) {
 		return nil, fmt.Errorf("error: function returned non real number")
 	}
-	return &Point{X: x, Y: y, Z: z, I: i, J: j}, nil
+	return &Point{X: x, Y: y, Z: z}, nil
 }
 
 type Polygon struct {
 	A, B, C, D *Point
 }
 
-func createPoints(numCells int, xyrange float64) []*Polygon {
+func createPolygons(numCells int, xyrange float64) []*Polygon {
 	polygons := make([]*Polygon, 0, numCells*numCells)
 
 	for i := 0; i < numCells; i++ {
@@ -73,16 +72,17 @@ func createPoints(numCells int, xyrange float64) []*Polygon {
 	}
 	return polygons
 }
+
 func main() {
 
-	cellPoints := createPoints(cells, xyrange)
+	polygons := createPolygons(cells, xyrange)
 
-	if len(cellPoints) == 0 {
+	if len(polygons) == 0 {
 		fmt.Fprintln(os.Stderr, "error: no real points are exist")
 		os.Exit(1)
 	}
-	min, max := cellPoints[0].A.Z, cellPoints[0].A.Z
-	for _, t := range cellPoints {
+	min, max := polygons[0].A.Z, polygons[0].A.Z
+	for _, t := range polygons {
 		min = math.Min(min, t.A.Z)
 		max = math.Max(max, t.A.Z)
 	}
@@ -91,7 +91,7 @@ func main() {
 
 	colorRange := htcmap.NewRange(min, max)
 
-	for _, t := range cellPoints {
+	for _, t := range polygons {
 
 		ax, ay := t.A.Isom()
 		bx, by := t.B.Isom()
