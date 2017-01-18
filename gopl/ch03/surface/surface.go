@@ -39,59 +39,66 @@ func (p *Point) Isom() (float64, float64) {
 // NewPoint transform given cells i and j to coordinates and executes given
 // function of two variables using created coordinates. If successful, a pointer
 // to new Point returned or error in case when function returns non-real value.
-func NewPoint(i, j int, f func(float64, float64) float64) (*Point, error) {
+func NewPoint(i, j int, xyrange float64) (*Point, error) {
 	// Transforming cell indexes to coordinates.
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
-	z := f(x, y)
+	z := f1(x, y)
 	if math.IsNaN(z) || math.IsInf(z, +1) || math.IsInf(z, -1) {
 		return nil, fmt.Errorf("error: function returned non real number")
 	}
 	return &Point{X: x, Y: y, Z: z, I: i, J: j}, nil
 }
 
-func main() {
+type Polygon struct {
+	A, B, C, D *Point
+}
 
-	cellPoints := make([][4]*Point, 0, cells*cells)
+func createPoints(numCells int, xyrange float64) []*Polygon {
+	polygons := make([]*Polygon, 0, numCells*numCells)
 
-	for i := 0; i < cells; i++ {
-		for j := 0; j < cells; j++ {
-			var coords [4]*Point
-			var aErr, bErr, cErr, dErr error
-			coords[0], aErr = NewPoint(i+1, j, f2)
-			coords[1], bErr = NewPoint(i, j, f2)
-			coords[2], cErr = NewPoint(i, j+1, f2)
-			coords[3], dErr = NewPoint(i+1, j+1, f2)
+	for i := 0; i < numCells; i++ {
+		for j := 0; j < numCells; j++ {
+			a, aErr := NewPoint(i+1, j, xyrange)
+			b, bErr := NewPoint(i, j, xyrange)
+			c, cErr := NewPoint(i, j+1, xyrange)
+			d, dErr := NewPoint(i+1, j+1, xyrange)
 
 			// Skipping cell with non-real points.
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
 				continue
 			}
-			cellPoints = append(cellPoints, coords)
+			polygons = append(polygons, &Polygon{A: a, B: b, C: c, D: d})
 		}
 	}
+	return polygons
+}
+func main() {
+
+	cellPoints := createPoints(cells, xyrange)
+
 	if len(cellPoints) == 0 {
 		fmt.Fprintln(os.Stderr, "error: no real points are exist")
 		os.Exit(1)
 	}
-	min, max := cellPoints[0][1].Z, cellPoints[0][1].Z
-	for _, cell := range cellPoints {
-		min = math.Min(min, cell[1].Z)
-		max = math.Max(max, cell[1].Z)
+	min, max := cellPoints[0].A.Z, cellPoints[0].A.Z
+	for _, t := range cellPoints {
+		min = math.Min(min, t.A.Z)
+		max = math.Max(max, t.A.Z)
 	}
 	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
 		"width='%d' height='%d'>\n", width, height)
 
 	colorRange := htcmap.NewRange(min, max)
 
-	for _, arr := range cellPoints {
+	for _, t := range cellPoints {
 
-		ax, ay := arr[0].Isom()
-		bx, by := arr[1].Isom()
-		cx, cy := arr[2].Isom()
-		dx, dy := arr[3].Isom()
+		ax, ay := t.A.Isom()
+		bx, by := t.B.Isom()
+		cx, cy := t.C.Isom()
+		dx, dy := t.D.Isom()
 
-		c := colorRange.AsStr(arr[1].Z)
+		c := colorRange.AsStr(t.B.Z)
 		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
 			"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
 			ax, ay, bx, by, cx, cy, dx, dy, c)
