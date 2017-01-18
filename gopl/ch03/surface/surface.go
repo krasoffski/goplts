@@ -35,9 +35,9 @@ func (p *Point) Isom() (float64, float64) {
 	return sx, sy
 }
 
-// NewPoint transform given cells i and j to coordinates and executes given
-// function of two variables using created coordinates. If successful, a pointer
-// to new Point returned or error in case when function returns non-real value.
+// NewPoint transform given cell with indexes i and j to coordinates and
+// executes function of two variables using created coordinates. If successful,
+// a pointer to Point returned or error in case function returns non-real value.
 func NewPoint(i, j int, xyrange float64) (*Point, error) {
 	// Transforming cell indexes to coordinates.
 	x := xyrange * (float64(i)/cells - 0.5)
