@@ -50,27 +50,6 @@ func NewPoint(i, j int, f func(float64, float64) float64) (*Point, error) {
 	return &Point{X: x, Y: y, Z: z, I: i, J: j}, nil
 }
 
-type Isometric struct {
-	Sx, Sy float64
-}
-
-func NewIsometric(p Point) *Isometric {
-	sx := width/2 + (p.X-p.Y)*cos30*xyscale
-	sy := height/2 + (p.X+p.Y)*sin30*xyscale - p.Z*zscale
-	return &Isometric{Sx: sx, Sy: sy}
-}
-
-type IsometricPolygon struct {
-	A, B, C, D Isometric
-	Color      string
-}
-
-func (p *IsometricPolygon) String() string {
-	return fmt.Sprintf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
-		"style='stroke:green; fill:%s; stroke-width:0.7'/>\n",
-		p.A.Sx, p.A.Sy, p.B.Sx, p.B.Sy, p.C.Sx, p.C.Sy, p.D.Sx, p.D.Sy, p.Color)
-}
-
 func main() {
 
 	cellPoints := make([][4]*Point, 0, cells*cells)
@@ -79,10 +58,10 @@ func main() {
 		for j := 0; j < cells; j++ {
 			var coords [4]*Point
 			var aErr, bErr, cErr, dErr error
-			coords[0], aErr = NewPoint(i+1, j, f1)
-			coords[1], bErr = NewPoint(i, j, f1)
-			coords[2], cErr = NewPoint(i, j+1, f1)
-			coords[3], dErr = NewPoint(i+1, j+1, f1)
+			coords[0], aErr = NewPoint(i+1, j, f2)
+			coords[1], bErr = NewPoint(i, j, f2)
+			coords[2], cErr = NewPoint(i, j+1, f2)
+			coords[3], dErr = NewPoint(i+1, j+1, f2)
 
 			// Skipping cell with non-real points.
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
