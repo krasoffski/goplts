@@ -115,3 +115,7 @@ func f1(x, y float64) float64 {
 	r := math.Hypot(x, y)
 	return math.Sin(r) / r
 }
+
+func f2(x, y float64) float64 {
+	return x * math.Exp(-x*x-y*y)
+}
