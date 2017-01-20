@@ -9,9 +9,9 @@ import (
 )
 
 type Settings struct {
+	Cells   int
 	Width   float64
 	Height  float64
-	Cells   float64
 	XYRange float64
 	XYScale float64
 	ZScale  float64
@@ -20,13 +20,14 @@ type Settings struct {
 
 func DefaultSettings() *Settings {
 	s := new(Settings)
+	s.Cells = 100
 	s.Width = 600
 	s.Height = 320
-	s.Cells = 100
 	s.XYRange = 30.0
 	s.XYScale = 10
 	s.ZScale = 128
 	s.Angle = math.Pi / 6
+	return s
 }
 
 // Point represents dot on three dimensional system of coordinates
@@ -35,9 +36,9 @@ type Point struct {
 }
 
 // Isom transforms Point from 3 dimensional system to isometric.
-func (p *Point) Isom() (float64, float64) {
-	sx := width/2 + (p.X-p.Y)*math.Cos(angle)*xyscale
-	sy := height/2 + (p.X+p.Y)*math.Sin(angle)*xyscale - p.Z*zscale
+func (p *Point) Isom(s *Settings) (float64, float64) {
+	sx := s.Width/2 + (p.X-p.Y)*math.Cos(s.Angle)*s.XYScale
+	sy := s.Height/2 + (p.X+p.Y)*math.Sin(s.Angle)*s.XYScale - p.Z*s.ZScale
 	return sx, sy
 }
 
@@ -45,10 +46,10 @@ func (p *Point) Isom() (float64, float64) {
 // X and Y and executes function of two variables using created coordinates.
 // If successful, a pointer to Point returned or error in case function returns
 // non-real value like Nan, -Inf or +Inf.
-func NewPoint(i, j int, xyrange float64) (*Point, error) {
+func NewPoint(i, j int, s *Settings) (*Point, error) {
 	// Transforming cell indexes to coordinates.
-	x := xyrange * (float64(i)/cells - 0.5)
-	y := xyrange * (float64(j)/cells - 0.5)
+	x := s.XYRange * (float64(i)/float64(s.Cells) - 0.5)
+	y := s.XYRange * (float64(j)/float64(s.Cells) - 0.5)
 	z := f1(x, y)
 	if math.IsNaN(z) || math.IsInf(z, +1) || math.IsInf(z, -1) {
 		return nil, fmt.Errorf("error: function returned non real number")
@@ -60,15 +61,15 @@ type Polygon struct {
 	A, B, C, D *Point
 }
 
-func createPolygons(numCells int, xyrange float64) []*Polygon {
-	polygons := make([]*Polygon, 0, numCells*numCells)
+func createPolygons(s *Settings) []*Polygon {
+	polygons := make([]*Polygon, 0, s.Cells*s.Cells)
 
-	for i := 0; i < numCells; i++ {
-		for j := 0; j < numCells; j++ {
-			a, aErr := NewPoint(i+1, j, xyrange)
-			b, bErr := NewPoint(i, j, xyrange)
-			c, cErr := NewPoint(i, j+1, xyrange)
-			d, dErr := NewPoint(i+1, j+1, xyrange)
+	for i := 0; i < s.Cells; i++ {
+		for j := 0; j < s.Cells; j++ {
+			a, aErr := NewPoint(i+1, j, s)
+			b, bErr := NewPoint(i, j, s)
+			c, cErr := NewPoint(i, j+1, s)
+			d, dErr := NewPoint(i+1, j+1, s)
 
 			// Skipping cell with non-real points.
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
@@ -82,7 +83,8 @@ func createPolygons(numCells int, xyrange float64) []*Polygon {
 
 func main() {
 
-	polygons := createPolygons(cells, xyrange)
+	settings := DefaultSettings()
+	polygons := createPolygons(settings)
 
 	if len(polygons) == 0 {
 		fmt.Fprintln(os.Stderr, "error: no real points are exist")
@@ -94,16 +96,16 @@ func main() {
 		max = math.Max(max, t.A.Z)
 	}
 	fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
-		"width='%d' height='%d'>\n", width, height)
+		"width='%d' height='%d'>\n", settings.Width, settings.Height)
 
 	colorRange := htcmap.NewRange(min, max)
 
 	for _, t := range polygons {
 
-		ax, ay := t.A.Isom()
-		bx, by := t.B.Isom()
-		cx, cy := t.C.Isom()
-		dx, dy := t.D.Isom()
+		ax, ay := t.A.Isom(settings)
+		bx, by := t.B.Isom(settings)
+		cx, cy := t.C.Isom(settings)
+		dx, dy := t.D.Isom(settings)
 
 		c := colorRange.AsStr(t.B.Z)
 		fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
