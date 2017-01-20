@@ -18,18 +18,6 @@ type Settings struct {
 	Angle   float64
 }
 
-func DefaultSettings() *Settings {
-	s := new(Settings)
-	s.Cells = 100
-	s.Width = 600
-	s.Height = 320
-	s.XYRange = 30.0
-	s.XYScale = 10
-	s.ZScale = 128
-	s.Angle = math.Pi / 6
-	return s
-}
-
 // Point represents dot on three dimensional system of coordinates
 type Point struct {
 	X, Y, Z float64
@@ -61,7 +49,7 @@ type Polygon struct {
 	A, B, C, D *Point
 }
 
-func createPolygons(s *Settings) []*Polygon {
+func CreatePolygons(s *Settings) []*Polygon {
 	polygons := make([]*Polygon, 0, s.Cells*s.Cells)
 
 	for i := 0; i < s.Cells; i++ {
@@ -83,8 +71,16 @@ func createPolygons(s *Settings) []*Polygon {
 
 func main() {
 
-	settings := DefaultSettings()
-	polygons := createPolygons(settings)
+	settings := &Settings{
+		Cells:   100,
+		Width:   600,
+		Height:  320,
+		XYRange: 30.0,
+		XYScale: 10,
+		ZScale:  128,
+		Angle:   math.Pi / 6,
+	}
+	polygons := CreatePolygons(settings)
 
 	if len(polygons) == 0 {
 		fmt.Fprintln(os.Stderr, "error: no real points are exist")
