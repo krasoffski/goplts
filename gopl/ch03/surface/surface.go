@@ -1,10 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/krasoffski/gomill/htcmap"
 )
@@ -70,7 +74,7 @@ func CreatePolygons(s Settings) []*Polygon {
 	return polygons
 }
 
-func isometric(out io.Writer, s Settings) {
+func Isometric(out io.Writer, s Settings) {
 
 	polygons := CreatePolygons(s)
 
@@ -103,7 +107,27 @@ func isometric(out io.Writer, s Settings) {
 	fmt.Fprintln(out, "</svg>")
 }
 
+// TODO: Looks ugly. Moreover, per-request settings does not work.
+func handler(s Settings) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		query := r.URL.Query()
+		if value := query.Get("angle"); value != "" {
+			angle, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				http.Error(w, "size value error", http.StatusBadRequest)
+				return
+			}
+			s.Angle = angle
+		}
+		Isometric(w, s)
+	}
+}
+
 func main() {
+	web := flag.Bool("web", false, "run web server on :8000")
+	flag.Parse()
+
 	settings := Settings{
 		Cells:   100,
 		Width:   600,
@@ -113,7 +137,11 @@ func main() {
 		ZScale:  128,
 		Angle:   math.Pi / 6,
 	}
-	isometric(os.Stdout, settings)
+	if *web {
+		http.HandleFunc("/", handler(settings))
+		log.Fatalln(http.ListenAndServe("localhost:8000", nil))
+	}
+	Isometric(os.Stdout, settings)
 
 }
 
