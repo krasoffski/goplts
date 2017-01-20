@@ -8,20 +8,26 @@ import (
 	"github.com/krasoffski/gomill/htcmap"
 )
 
-const (
-	width   = 600
-	height  = 320
-	cells   = 100
-	xyrange = 30.0
-	xyscale = width / 2 / xyrange
-	zscale  = height * 0.4
-	angle   = math.Pi / 6
-)
+type Settings struct {
+	Width   float64
+	Height  float64
+	Cells   float64
+	XYRange float64
+	XYScale float64
+	ZScale  float64
+	Angle   float64
+}
 
-var (
-	sin30 = math.Sin(angle)
-	cos30 = math.Cos(angle)
-)
+func DefaultSettings() *Settings {
+	s := new(Settings)
+	s.Width = 600
+	s.Height = 320
+	s.Cells = 100
+	s.XYRange = 30.0
+	s.XYScale = 10
+	s.ZScale = 128
+	s.Angle = math.Pi / 6
+}
 
 // Point represents dot on three dimensional system of coordinates
 type Point struct {
@@ -30,14 +36,15 @@ type Point struct {
 
 // Isom transforms Point from 3 dimensional system to isometric.
 func (p *Point) Isom() (float64, float64) {
-	sx := width/2 + (p.X-p.Y)*cos30*xyscale
-	sy := height/2 + (p.X+p.Y)*sin30*xyscale - p.Z*zscale
+	sx := width/2 + (p.X-p.Y)*math.Cos(angle)*xyscale
+	sy := height/2 + (p.X+p.Y)*math.Sin(angle)*xyscale - p.Z*zscale
 	return sx, sy
 }
 
-// NewPoint transform given cell with indexes i and j to coordinates and
-// executes function of two variables using created coordinates. If successful,
-// a pointer to Point returned or error in case function returns non-real value.
+// NewPoint transform given cell with indexes i, j and xyrange  to coordinates
+// X and Y and executes function of two variables using created coordinates.
+// If successful, a pointer to Point returned or error in case function returns
+// non-real value like Nan, -Inf or +Inf.
 func NewPoint(i, j int, xyrange float64) (*Point, error) {
 	// Transforming cell indexes to coordinates.
 	x := xyrange * (float64(i)/cells - 0.5)
@@ -109,8 +116,4 @@ func main() {
 func f1(x, y float64) float64 {
 	r := math.Hypot(x, y)
 	return math.Sin(r) / r
-}
-
-func f2(x, y float64) float64 {
-	return x * math.Exp(-x*x-y*y)
 }
