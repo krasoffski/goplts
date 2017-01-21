@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -74,7 +75,7 @@ func CreatePolygons(s Settings) []*Polygon {
 	return polygons
 }
 
-func Isometric(out io.Writer, s Settings) {
+func Surface(out io.Writer, s Settings) {
 
 	polygons := CreatePolygons(s)
 
@@ -107,20 +108,25 @@ func Isometric(out io.Writer, s Settings) {
 	fmt.Fprintln(out, "</svg>")
 }
 
+func checkValF(values url.Values, name string, dv float64) (float64, error) {
+	var converted float64
+	var err error
+	if v := values.Get(name); v != "" {
+		converted, err = strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("%s value error: %s", name, err)
+		}
+	} else {
+		return dv, nil
+	}
+	return converted, nil
+}
+
 // TODO: Looks ugly. Moreover, per-request settings does not work.
 func handler(s Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/svg+xml")
-		query := r.URL.Query()
-		if value := query.Get("angle"); value != "" {
-			angle, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				http.Error(w, "size value error", http.StatusBadRequest)
-				return
-			}
-			s.Angle = angle
-		}
-		Isometric(w, s)
+		Surface(w, s)
 	}
 }
 
@@ -141,7 +147,7 @@ func main() {
 		http.HandleFunc("/", handler(settings))
 		log.Fatalln(http.ListenAndServe("localhost:8000", nil))
 	}
-	Isometric(os.Stdout, settings)
+	Surface(os.Stdout, settings)
 
 }
 
