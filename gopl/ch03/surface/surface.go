@@ -13,29 +13,30 @@ import (
 	"github.com/krasoffski/gomill/htcmap"
 )
 
-type settings map[string]float64
+// Settings represents required configuration for surface drawning.
+type Settings map[string]float64
 
-// Point represents dot on three dimensional system of coordinates
+// Point represents dot on three dimensional system of coordinates.
 type Point struct {
 	X, Y, Z float64
 }
 
-// Isom transforms Point from 3 dimensional system to isometric.
-func (p *Point) Isom(s settings) (float64, float64) {
+// Isometric transforms Point from 3 dimensional system to isometric.
+func (p *Point) Isometric(s Settings) (float64, float64) {
 	sx := s["width"]/2 + (p.X-p.Y)*math.Cos(s["angle"])*s["xyscale"]
 	sy := s["height"]/2 + (p.X+p.Y)*math.Sin(s["angle"])*s["xyscale"] - p.Z*s["zscale"]
 	return sx, sy
 }
 
-// NewPoint transform given cell with indexes i, j and xyrange  to coordinates
+// NewPoint transform given cell with indexes i, j and Settings to coordinates
 // X and Y and executes function of two variables using created coordinates.
 // If successful, a pointer to Point returned or error in case function returns
 // non-real value like Nan, -Inf or +Inf.
-func NewPoint(i, j int, s settings) (*Point, error) {
+func NewPoint(i, j int, s Settings) (*Point, error) {
 	// Transforming cell indexes to coordinates.
 	x := s["xyrange"] * (float64(i)/s["cells"] - 0.5)
 	y := s["xyrange"] * (float64(j)/s["cells"] - 0.5)
-	z := f2(x, y)
+	z := f1(x, y)
 	if math.IsNaN(z) || math.IsInf(z, +1) || math.IsInf(z, -1) {
 		return nil, fmt.Errorf("error: function returned non real number")
 	}
@@ -46,7 +47,7 @@ type Polygon struct {
 	A, B, C, D *Point
 }
 
-func CreatePolygons(s settings) []*Polygon {
+func CreatePolygons(s Settings) []*Polygon {
 	polygons := make([]*Polygon, 0, int(s["cells"]*s["cells"]))
 
 	for i := 0; i < int(s["cells"]); i++ {
@@ -66,7 +67,8 @@ func CreatePolygons(s settings) []*Polygon {
 	return polygons
 }
 
-func Surface(out io.Writer, s settings) {
+// Surface writes isometric representation of surface as svg image.
+func Surface(out io.Writer, s Settings) {
 
 	polygons := CreatePolygons(s)
 
@@ -86,10 +88,10 @@ func Surface(out io.Writer, s settings) {
 
 	for _, t := range polygons {
 
-		ax, ay := t.A.Isom(s)
-		bx, by := t.B.Isom(s)
-		cx, cy := t.C.Isom(s)
-		dx, dy := t.D.Isom(s)
+		ax, ay := t.A.Isometric(s)
+		bx, by := t.B.Isometric(s)
+		cx, cy := t.C.Isometric(s)
+		dx, dy := t.D.Isometric(s)
 
 		c := colorRange.AsStr(t.B.Z)
 		fmt.Fprintf(out, "<polygon points='%g,%g %g,%g %g,%g %g,%g' "+
@@ -99,10 +101,10 @@ func Surface(out io.Writer, s settings) {
 	fmt.Fprintln(out, "</svg>")
 }
 
-func handler(s settings) http.HandlerFunc {
+func handler(s Settings) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/svg+xml")
-		reqSettings := make(settings)
+		reqSettings := make(Settings)
 
 		for k, v := range s {
 			reqSettings[k] = v
@@ -134,7 +136,7 @@ func main() {
 	web := flag.Bool("web", false, "run web server on :8000")
 	flag.Parse()
 
-	s := settings{
+	settings := Settings{
 		"cells":   100,
 		"width":   600,
 		"height":  320,
@@ -144,10 +146,10 @@ func main() {
 		"angle":   math.Pi / 6,
 	}
 	if *web {
-		http.HandleFunc("/", handler(s))
+		http.HandleFunc("/", handler(settings))
 		log.Fatalln(http.ListenAndServe("localhost:8000", nil))
 	}
-	Surface(os.Stdout, s)
+	Surface(os.Stdout, settings)
 
 }
 
