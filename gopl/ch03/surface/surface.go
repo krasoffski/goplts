@@ -54,7 +54,7 @@ type Tetragon struct {
 // which contain Point with non-real Z is skipped (NewPoint error).
 func CreateTetragons(s Settings) []*Tetragon {
 	// Allocating required amount of memory for tetragons.
-	polygons := make([]*Tetragon, 0, int(s["cells"]*s["cells"]))
+	tetragons := make([]*Tetragon, 0, int(s["cells"]*s["cells"]))
 
 	for i := 0; i < int(s["cells"]); i++ {
 		for j := 0; j < int(s["cells"]); j++ {
@@ -67,10 +67,10 @@ func CreateTetragons(s Settings) []*Tetragon {
 			if aErr != nil || bErr != nil || cErr != nil || dErr != nil {
 				continue
 			}
-			polygons = append(polygons, &Tetragon{A: a, B: b, C: c, D: d})
+			tetragons = append(tetragons, &Tetragon{A: a, B: b, C: c, D: d})
 		}
 	}
-	return polygons
+	return tetragons
 }
 
 // Surface writes isometric representation of surface as svg image.
