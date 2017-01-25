@@ -7,13 +7,15 @@ import (
 	"image/png"
 	"math/cmplx"
 	"os"
+
+	"github.com/krasoffski/gomill/htcmap"
 )
 
 func main() {
 	const (
 		xmin, ymin    = -2, -2
 		xmax, ymax    = +2, +2
-		width, height = 1024, 1024
+		width, height = 2048, 2048
 	)
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
@@ -31,14 +33,15 @@ func main() {
 }
 
 func mandelbrot(z complex128) color.Color {
-	const iterations = 200
-	const contrast = 15
+	const iterations = 255
+	const contrast = 42
 
 	var v complex128
 	for n := uint8(0); n < iterations; n++ {
 		v = v*v + z
 		if cmplx.Abs(v) > 2 {
-			return color.Gray{255 - contrast*n}
+			r, g, b := htcmap.AsUInt8(float64(n*contrast), 0, iterations)
+			return color.RGBA{r, g, b, 255}
 		}
 	}
 	return color.Black
