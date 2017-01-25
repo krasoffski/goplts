@@ -14,9 +14,9 @@ import (
 
 func main() {
 	const (
-		xmin, ymin    = -2, -2
-		xmax, ymax    = +2, +2
-		width, height = 2048, 2048
+		xmin, ymin    = -2.2, -1.2
+		xmax, ymax    = +1.2, +1.2
+		width, height = 1536, 1024
 	)
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
