@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"math/cmplx"
 	"os"
 
@@ -34,13 +35,15 @@ func main() {
 
 func mandelbrot(z complex128) color.Color {
 	const iterations = 255
-	const contrast = 42
+	const contrast = 15
 
 	var v complex128
 	for n := uint8(0); n < iterations; n++ {
 		v = v*v + z
-		if cmplx.Abs(v) > 2 {
-			r, g, b := htcmap.AsUInt8(float64(n*contrast), 0, iterations)
+		vAbs := cmplx.Abs(v)
+		if vAbs > 2 && n > 5 {
+			smooth := float64(n) + 1 - math.Log(math.Log(vAbs))/math.Log(2)
+			r, g, b := htcmap.AsUInt8(float64(smooth*contrast), 0, iterations)
 			return color.RGBA{r, g, b, 255}
 		}
 	}
