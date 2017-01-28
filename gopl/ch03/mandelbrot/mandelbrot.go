@@ -15,7 +15,8 @@ const (
 	xmin, ymin    = -2.2, -1.2
 	xmax, ymax    = +1.2, +1.2
 	width, height = 1536, 1024
-	scale         = 2
+	scale         = 10
+	scale2        = scale * scale
 )
 
 func xCord(x int) float64 {
@@ -29,7 +30,7 @@ func yCord(y int) float64 {
 func superSample(px, py int) color.RGBA64 {
 
 	var xCords, yCords [scale]float64
-	var subPixels [scale * scale]color.Color
+	var subPixels [scale2]color.Color
 
 	// Single calculation of required coordinates for super sampling.
 	for i := 0; i < scale; i++ {
@@ -49,9 +50,9 @@ func superSample(px, py int) color.RGBA64 {
 	for _, c := range subPixels {
 		r, g, b, _ := c.RGBA()
 		// TODO: Figure out what is better type translation or scale*scale.
-		rAvg += float64(r) / (scale * scale)
-		gAvg += float64(g) / (scale * scale)
-		bAvg += float64(b) / (scale * scale)
+		rAvg += float64(r) / scale2
+		gAvg += float64(g) / scale2
+		bAvg += float64(b) / scale2
 	}
 	return color.RGBA64{uint16(rAvg), uint16(gAvg), uint16(bAvg), 0xFFFF}
 }
