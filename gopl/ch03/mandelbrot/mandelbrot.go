@@ -27,7 +27,7 @@ func yCord(y int) float64 {
 	return float64(y)/(height*scale)*(ymax-ymin) + ymin
 }
 
-func superSample(px, py int) color.RGBA64 {
+func superSampling(px, py int) color.Color {
 
 	var xCords, yCords [scale]float64
 	var subPixels [scale2]color.Color
@@ -38,9 +38,11 @@ func superSample(px, py int) color.RGBA64 {
 		yCords[i] = yCord(py + i)
 	}
 
-	// Now instead of calculation coordinate only fetching required one.
+	// Instead of calculation coordinate only fetching required one.
 	for iy := 0; iy < scale; iy++ {
 		for ix := 0; ix < scale; ix++ {
+			// Using one dimension array because do not care about pixel order,
+			// because at the end we are calculating avarage for all sub-pixels.
 			subPixels[iy*scale+ix] = mandelbrot(complex(xCords[ix], yCords[iy]))
 		}
 	}
@@ -49,7 +51,6 @@ func superSample(px, py int) color.RGBA64 {
 
 	for _, c := range subPixels {
 		r, g, b, _ := c.RGBA()
-		// TODO: Figure out what is better type translation or scale*scale.
 		rAvg += float64(r) / scale2
 		gAvg += float64(g) / scale2
 		bAvg += float64(b) / scale2
@@ -63,7 +64,7 @@ func main() {
 
 	for py := 0; py < height*scale; py += scale {
 		for px := 0; px < width*scale; px += scale {
-			c := superSample(px, py)
+			c := superSampling(px, py)
 			img.Set(px/scale, py/scale, c)
 		}
 	}
