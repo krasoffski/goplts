@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"math/cmplx"
 	"os"
+	"sync"
 
 	"github.com/krasoffski/gomill/htcmap"
 )
@@ -15,9 +16,19 @@ const (
 	xmin, ymin    = -2.2, -1.2
 	xmax, ymax    = +1.2, +1.2
 	width, height = 1536, 1024
-	factor        = 2
+	factor        = 10
 	factor2       = factor * factor
+	workers       = 4
 )
+
+type point struct {
+	x, y int
+}
+
+type pixel struct {
+	point
+	c color.Color
+}
 
 func xCord(x int) float64 {
 	return float64(x)/(width*factor)*(xmax-xmin) + xmin
@@ -27,15 +38,15 @@ func yCord(y int) float64 {
 	return float64(y)/(height*factor)*(ymax-ymin) + ymin
 }
 
-func superSampling(px, py int) color.Color {
+func superSampling(p *point) color.Color {
 
 	var xCords, yCords [factor]float64
 	var subPixels [factor2]color.Color
 
 	// Single calculation of required coordinates for super sampling.
 	for i := 0; i < factor; i++ {
-		xCords[i] = xCord(px + i)
-		yCords[i] = yCord(py + i)
+		xCords[i] = xCord(p.x + i)
+		yCords[i] = yCord(p.y + i)
 	}
 
 	// Instead of calculation coordinate only fetching required one.
@@ -62,14 +73,45 @@ func main() {
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	for py := 0; py < height*factor; py += factor {
-		for px := 0; px < width*factor; px += factor {
-			c := superSampling(px, py)
-			img.Set(px/factor, py/factor, c)
+	points := make(chan *point)
+	pixels := make(chan *pixel)
+
+	go func() {
+		for py := 0; py < height*factor; py += factor {
+			for px := 0; px < width*factor; px += factor {
+				points <- &point{px, py}
+			}
 		}
+		close(points)
+	}()
+
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				p, ok := <-points
+				if !ok {
+					return
+				}
+				c := superSampling(p)
+				pixels <- &pixel{point{p.x, p.y}, c}
+
+			}
+		}()
 	}
+	go func() {
+		for p := range pixels {
+			img.Set(p.x/factor, p.y/factor, p.c)
+		}
+	}()
+	wg.Wait()
+	close(pixels)
+
 	if err := png.Encode(os.Stdout, img); err != nil {
 		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
+		os.Exit(1)
 	}
 }
 
