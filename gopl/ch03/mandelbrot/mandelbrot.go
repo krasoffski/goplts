@@ -8,6 +8,7 @@ import (
 	"math/cmplx"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/krasoffski/gomill/htcmap"
 )
@@ -84,6 +85,7 @@ func producer(width, height, factor int) <-chan *point {
 
 // Do not like here that return rw chan from executor. Think about that.
 func executer(wg *sync.WaitGroup, in <-chan *point) chan *pixel {
+	// out := make(chan *pixel, height*width)
 	out := make(chan *pixel)
 	for i := 0; i < workers; i++ {
 		id := i
@@ -97,10 +99,8 @@ func executer(wg *sync.WaitGroup, in <-chan *point) chan *pixel {
 					fmt.Fprintf(os.Stderr, "#%02d stopped\n", id)
 					return
 				}
-				fmt.Fprintf(os.Stderr, "#%02d got %v\n", id, p)
 				c := superSampling(p)
 				out <- &pixel{point{p.x, p.y}, c}
-				fmt.Fprintf(os.Stderr, "#%02d did %v\n", id, p)
 			}
 		}()
 	}
@@ -132,10 +132,19 @@ func main() {
 	points := producer(width, height, factor)
 	pixels := executer(&wg, points)
 
+	// TODO: fix sync issue here.
 	go func() {
+		fmt.Fprintln(os.Stderr, "started writer")
 		for p := range pixels {
-			img.Set(p.x/factor, p.y/factor, p.c)
+			x, y := p.x/factor, p.y/factor
+			if x > width-2 && y > height-2 {
+				time.Sleep(10 * time.Second)
+				fmt.Fprintf(os.Stderr, "sleep (%d/%d)\n", x, y)
+			}
+			img.Set(x, y, p.c)
+
 		}
+		fmt.Fprintln(os.Stderr, "finished writer")
 	}()
 
 	wg.Wait()
