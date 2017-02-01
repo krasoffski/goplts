@@ -16,7 +16,7 @@ const (
 	xmin, ymin    = -2.2, -1.2
 	xmax, ymax    = +1.2, +1.2
 	width, height = 1536, 1024
-	factor        = 10
+	factor        = 2
 	factor2       = factor * factor
 	workers       = 4
 )
@@ -69,50 +69,42 @@ func superSampling(p *point) color.Color {
 	return color.RGBA64{uint16(rAvg), uint16(gAvg), uint16(bAvg), 0xFFFF}
 }
 
-func main() {
-
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
-
-	points := make(chan *point)
-	pixels := make(chan *pixel)
-
+func producer(width, height, factor int) <-chan *point {
+	out := make(chan *point)
 	go func() {
+		defer close(out)
 		for py := 0; py < height*factor; py += factor {
 			for px := 0; px < width*factor; px += factor {
-				points <- &point{px, py}
+				out <- &point{px, py}
 			}
 		}
-		close(points)
 	}()
+	return out
+}
 
-	var wg sync.WaitGroup
+// Do not like here that return rw chan from executor. Think about that.
+func executer(wg *sync.WaitGroup, in <-chan *point) chan *pixel {
+	out := make(chan *pixel)
 	for i := 0; i < workers; i++ {
+		id := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			fmt.Fprintf(os.Stderr, "#%02d started\n", id)
 			for {
-				p, ok := <-points
+				p, ok := <-in
 				if !ok {
+					fmt.Fprintf(os.Stderr, "#%02d stopped\n", id)
 					return
 				}
+				fmt.Fprintf(os.Stderr, "#%02d got %v\n", id, p)
 				c := superSampling(p)
-				pixels <- &pixel{point{p.x, p.y}, c}
-
+				out <- &pixel{point{p.x, p.y}, c}
+				fmt.Fprintf(os.Stderr, "#%02d did %v\n", id, p)
 			}
 		}()
 	}
-	go func() {
-		for p := range pixels {
-			img.Set(p.x/factor, p.y/factor, p.c)
-		}
-	}()
-	wg.Wait()
-	close(pixels)
-
-	if err := png.Encode(os.Stdout, img); err != nil {
-		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
-		os.Exit(1)
-	}
+	return out
 }
 
 func mandelbrot(z complex128) color.Color {
@@ -130,4 +122,28 @@ func mandelbrot(z complex128) color.Color {
 		}
 	}
 	return color.Black
+}
+
+func main() {
+
+	var wg sync.WaitGroup
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	points := producer(width, height, factor)
+	pixels := executer(&wg, points)
+
+	go func() {
+		for p := range pixels {
+			img.Set(p.x/factor, p.y/factor, p.c)
+		}
+	}()
+
+	wg.Wait()
+	// TODO: figure out better way to close chan pixels.
+	close(pixels)
+
+	if err := png.Encode(os.Stdout, img); err != nil {
+		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
+		os.Exit(1)
+	}
 }
