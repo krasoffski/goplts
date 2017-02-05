@@ -112,7 +112,7 @@ func compute(width, height, factor int) <-chan *pixel {
 					return
 				}
 				c := superSampling(p)
-				pixels <- &pixel{point{p.x, p.y}, c}
+				pixels <- &pixel{point{p.x / factor, p.y / factor}, c}
 			}
 		}()
 	}
@@ -130,7 +130,7 @@ func main() {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	for p := range compute(width, height, factor) {
-		img.Set(p.x/factor, p.y/factor, p.c)
+		img.Set(p.x, p.y, p.c)
 	}
 
 	if err := png.Encode(os.Stdout, img); err != nil {
