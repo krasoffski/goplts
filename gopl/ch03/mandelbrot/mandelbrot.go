@@ -16,7 +16,7 @@ const (
 	xmin, ymin    = -2.2, -1.2
 	xmax, ymax    = +1.2, +1.2
 	width, height = 1536, 1024
-	factor        = 2
+	factor        = 4
 	factor2       = factor * factor
 	workers       = 4
 )
@@ -69,48 +69,6 @@ func superSampling(p *point) color.Color {
 	return color.RGBA64{uint16(rAvg), uint16(gAvg), uint16(bAvg), 0xFFFF}
 }
 
-func producer(width, height, factor int) <-chan *point {
-	out := make(chan *point)
-	go func() {
-		defer close(out)
-
-		for py := 0; py < height*factor; py += factor {
-			for px := 0; px < width*factor; px += factor {
-				out <- &point{px, py}
-			}
-		}
-	}()
-	return out
-}
-
-func compute(in <-chan *point) <-chan *pixel {
-	var wg sync.WaitGroup
-	out := make(chan *pixel, workers)
-
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			for {
-				p, ok := <-in
-				if !ok {
-					return
-				}
-				c := superSampling(p)
-				out <- &pixel{point{p.x, p.y}, c}
-			}
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-
-	return out
-}
-
 func mandelbrot(z complex128) color.Color {
 	const iterations = 255
 	const contrast = 15
@@ -128,11 +86,50 @@ func mandelbrot(z complex128) color.Color {
 	return color.Black
 }
 
+func compute(width, height, factor int) <-chan *pixel {
+	var wg sync.WaitGroup
+	points := make(chan *point)
+	pixels := make(chan *pixel, workers)
+
+	go func() {
+		defer close(points)
+
+		for py := 0; py < height*factor; py += factor {
+			for px := 0; px < width*factor; px += factor {
+				points <- &point{px, py}
+			}
+		}
+	}()
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for {
+				p, ok := <-points
+				if !ok {
+					return
+				}
+				c := superSampling(p)
+				pixels <- &pixel{point{p.x, p.y}, c}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(pixels)
+	}()
+
+	return pixels
+}
+
 func main() {
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	for p := range compute(producer(width, height, factor)) {
+	for p := range compute(width, height, factor) {
 		img.Set(p.x/factor, p.y/factor, p.c)
 	}
 
