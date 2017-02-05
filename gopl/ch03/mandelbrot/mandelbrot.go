@@ -83,7 +83,10 @@ func producer(width, height, factor int) <-chan *point {
 	return out
 }
 
-func compute(wg *sync.WaitGroup, in <-chan *point, out chan<- *pixel) {
+func compute(in <-chan *point) <-chan *pixel {
+	var wg sync.WaitGroup
+	out := make(chan *pixel, workers)
+
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
@@ -99,6 +102,13 @@ func compute(wg *sync.WaitGroup, in <-chan *point, out chan<- *pixel) {
 			}
 		}()
 	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	return out
 }
 
 func mandelbrot(z complex128) color.Color {
@@ -120,25 +130,11 @@ func mandelbrot(z complex128) color.Color {
 
 func main() {
 
-	var workersWG, setWG sync.WaitGroup
-
-	pixels := make(chan *pixel, workers)
-	compute(&workersWG, producer(width, height, factor), pixels)
-
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	setWG.Add(1)
-	go func() {
-		defer setWG.Done()
 
-		for p := range pixels {
-			img.Set(p.x/factor, p.y/factor, p.c)
-		}
-	}()
-
-	workersWG.Wait()
-	// Closing here because using range for setting pixels.
-	close(pixels)
-	setWG.Wait()
+	for p := range compute(producer(width, height, factor)) {
+		img.Set(p.x/factor, p.y/factor, p.c)
+	}
 
 	if err := png.Encode(os.Stdout, img); err != nil {
 		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
