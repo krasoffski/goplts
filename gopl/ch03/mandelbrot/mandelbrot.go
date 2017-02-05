@@ -8,7 +8,6 @@ import (
 	"math/cmplx"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/krasoffski/gomill/htcmap"
 )
@@ -74,6 +73,7 @@ func producer(width, height, factor int) <-chan *point {
 	out := make(chan *point)
 	go func() {
 		defer close(out)
+
 		for py := 0; py < height*factor; py += factor {
 			for px := 0; px < width*factor; px += factor {
 				out <- &point{px, py}
@@ -83,20 +83,15 @@ func producer(width, height, factor int) <-chan *point {
 	return out
 }
 
-// Do not like here that return rw chan from executor. Think about that.
-func executer(wg *sync.WaitGroup, in <-chan *point) chan *pixel {
-	// out := make(chan *pixel, height*width)
-	out := make(chan *pixel)
+func compute(wg *sync.WaitGroup, in <-chan *point, out chan<- *pixel) {
 	for i := 0; i < workers; i++ {
-		id := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fmt.Fprintf(os.Stderr, "#%02d started\n", id)
+
 			for {
 				p, ok := <-in
 				if !ok {
-					fmt.Fprintf(os.Stderr, "#%02d stopped\n", id)
 					return
 				}
 				c := superSampling(p)
@@ -104,7 +99,6 @@ func executer(wg *sync.WaitGroup, in <-chan *point) chan *pixel {
 			}
 		}()
 	}
-	return out
 }
 
 func mandelbrot(z complex128) color.Color {
@@ -126,30 +120,25 @@ func mandelbrot(z complex128) color.Color {
 
 func main() {
 
-	var wg sync.WaitGroup
+	var workersWG, setWG sync.WaitGroup
+
+	pixels := make(chan *pixel, workers)
+	compute(&workersWG, producer(width, height, factor), pixels)
+
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-
-	points := producer(width, height, factor)
-	pixels := executer(&wg, points)
-
-	// TODO: fix sync issue here.
+	setWG.Add(1)
 	go func() {
-		fmt.Fprintln(os.Stderr, "started writer")
-		for p := range pixels {
-			x, y := p.x/factor, p.y/factor
-			if x > width-2 && y > height-2 {
-				time.Sleep(10 * time.Second)
-				fmt.Fprintf(os.Stderr, "sleep (%d/%d)\n", x, y)
-			}
-			img.Set(x, y, p.c)
+		defer setWG.Done()
 
+		for p := range pixels {
+			img.Set(p.x/factor, p.y/factor, p.c)
 		}
-		fmt.Fprintln(os.Stderr, "finished writer")
 	}()
 
-	wg.Wait()
-	// TODO: figure out better way to close chan pixels.
+	workersWG.Wait()
+	// Closing here because using range for setting pixels.
 	close(pixels)
+	setWG.Wait()
 
 	if err := png.Encode(os.Stdout, img); err != nil {
 		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
