@@ -14,9 +14,8 @@ import (
 )
 
 const (
-	xmin, ymin    = -2.2, -1.2
-	xmax, ymax    = +1.2, +1.2
-	width, height = 1536, 1024
+	xmin, ymin = -2.2, -1.2
+	xmax, ymax = +1.2, +1.2
 )
 
 type point struct {
@@ -28,23 +27,23 @@ type pixel struct {
 	c color.Color
 }
 
-func xCord(x, factor int) float64 {
+func xCord(x, width, factor int) float64 {
 	return float64(x)/float64(width*factor)*(xmax-xmin) + xmin
 }
 
-func yCord(y, factor int) float64 {
+func yCord(y, height, factor int) float64 {
 	return float64(y)/float64(height*factor)*(ymax-ymin) + ymin
 }
 
-func superSampling(p *point, factor int) color.Color {
+func superSampling(p *point, width, height, factor int) color.Color {
 
 	xCords, yCords := make([]float64, factor), make([]float64, factor)
 	subPixels := make([]color.Color, factor*factor)
 
 	// Single calculation of required coordinates for super sampling.
 	for i := 0; i < factor; i++ {
-		xCords[i] = xCord(p.x+i, factor)
-		yCords[i] = yCord(p.y+i, factor)
+		xCords[i] = xCord(p.x+i, width, factor)
+		yCords[i] = yCord(p.y+i, height, factor)
 	}
 
 	// Instead of calculation coordinate only fetching required one.
@@ -111,7 +110,7 @@ func compute(width, height, factor, workers int) <-chan *pixel {
 				if !ok {
 					return
 				}
-				c := superSampling(p, factor)
+				c := superSampling(p, width, height, factor)
 				pixels <- &pixel{point{p.x / factor, p.y / factor}, c}
 			}
 		}()
@@ -126,8 +125,10 @@ func compute(width, height, factor, workers int) <-chan *pixel {
 }
 
 func main() {
-	factor := flag.Int("factor", 2, "super sampling factor")
+	factor := flag.Int("factor", 2, "scale factor for super sampling")
 	workers := flag.Int("workers", 2, "number of workers for calculation")
+	width := flag.Int("width", 1536, "width of png image in pixels")
+	height := flag.Int("height", 1024, "width of png image in pixels")
 	flag.Parse()
 	if *factor < 1 || *factor > 256 {
 		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *factor)
@@ -139,9 +140,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	img := image.NewRGBA(image.Rect(0, 0, *width, *height))
 
-	for p := range compute(width, height, *factor, *workers) {
+	for p := range compute(*width, *height, *factor, *workers) {
 		img.Set(p.x, p.y, p.c)
 	}
 
