@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -16,9 +17,6 @@ const (
 	xmin, ymin    = -2.2, -1.2
 	xmax, ymax    = +1.2, +1.2
 	width, height = 1536, 1024
-	factor        = 4
-	factor2       = factor * factor
-	workers       = 4
 )
 
 type point struct {
@@ -30,23 +28,23 @@ type pixel struct {
 	c color.Color
 }
 
-func xCord(x int) float64 {
-	return float64(x)/(width*factor)*(xmax-xmin) + xmin
+func xCord(x, factor int) float64 {
+	return float64(x)/float64(width*factor)*(xmax-xmin) + xmin
 }
 
-func yCord(y int) float64 {
-	return float64(y)/(height*factor)*(ymax-ymin) + ymin
+func yCord(y, factor int) float64 {
+	return float64(y)/float64(height*factor)*(ymax-ymin) + ymin
 }
 
-func superSampling(p *point) color.Color {
+func superSampling(p *point, factor int) color.Color {
 
-	var xCords, yCords [factor]float64
-	var subPixels [factor2]color.Color
+	xCords, yCords := make([]float64, factor), make([]float64, factor)
+	subPixels := make([]color.Color, factor*factor)
 
 	// Single calculation of required coordinates for super sampling.
 	for i := 0; i < factor; i++ {
-		xCords[i] = xCord(p.x + i)
-		yCords[i] = yCord(p.y + i)
+		xCords[i] = xCord(p.x+i, factor)
+		yCords[i] = yCord(p.y+i, factor)
 	}
 
 	// Instead of calculation coordinate only fetching required one.
@@ -60,6 +58,8 @@ func superSampling(p *point) color.Color {
 
 	var rAvg, gAvg, bAvg float64
 
+	// TODO: think about removing multiplication of factor for each calculation.
+	factor2 := float64(factor * factor)
 	for _, c := range subPixels {
 		r, g, b, _ := c.RGBA()
 		rAvg += float64(r) / factor2
@@ -86,7 +86,7 @@ func mandelbrot(z complex128) color.Color {
 	return color.Black
 }
 
-func compute(width, height, factor int) <-chan *pixel {
+func compute(width, height, factor, workers int) <-chan *pixel {
 	var wg sync.WaitGroup
 	points := make(chan *point)
 	pixels := make(chan *pixel, workers)
@@ -111,7 +111,7 @@ func compute(width, height, factor int) <-chan *pixel {
 				if !ok {
 					return
 				}
-				c := superSampling(p)
+				c := superSampling(p, factor)
 				pixels <- &pixel{point{p.x / factor, p.y / factor}, c}
 			}
 		}()
@@ -126,13 +126,29 @@ func compute(width, height, factor int) <-chan *pixel {
 }
 
 func main() {
+	factor := flag.Int("factor", 2, "super sampling factor")
+	workers := flag.Int("workers", 2, "number of workers for calculation")
+	flag.Parse()
+	if *factor < 1 || *factor > 256 {
+		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *factor)
+		os.Exit(1)
+	}
+
+	if *workers < 1 || *workers > 256 {
+		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *workers)
+		os.Exit(1)
+	}
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 
-	for p := range compute(width, height, factor) {
+	for p := range compute(width, height, *factor, *workers) {
 		img.Set(p.x, p.y, p.c)
 	}
 
+	if err := png.Encode(os.Stdout, img); err != nil {
+		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
+		os.Exit(1)
+	}
 	if err := png.Encode(os.Stdout, img); err != nil {
 		fmt.Fprintf(os.Stderr, "error encoding png: %s", err)
 		os.Exit(1)
