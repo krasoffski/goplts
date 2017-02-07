@@ -127,8 +127,8 @@ func compute(width, height, factor, workers int) <-chan *pixel {
 func main() {
 	factor := flag.Int("factor", 2, "scale factor for super sampling")
 	workers := flag.Int("workers", 2, "number of workers for calculation")
-	width := flag.Int("width", 1536, "width of png image in pixels")
-	height := flag.Int("height", 1024, "width of png image in pixels")
+	width := flag.Int("width", 1536, "width of png image in pixels, WxH=3x2")
+	height := flag.Int("height", 1024, "height of png image in pixels, WxH=3x2")
 	flag.Parse()
 	if *factor < 1 || *factor > 256 {
 		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *factor)
