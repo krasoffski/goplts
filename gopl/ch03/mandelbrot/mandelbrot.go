@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"math/cmplx"
 	"os"
 	"sync"
@@ -35,7 +36,7 @@ func yCord(y, height, factor int) float64 {
 	return float64(y)/float64(height*factor)*(ymax-ymin) + ymin
 }
 
-func superSampling(p *point, width, height, factor int) color.Color {
+func superSampling(p *point, width, height, factor int, smooth bool) color.Color {
 
 	xCords, yCords := make([]float64, factor), make([]float64, factor)
 	subPixels := make([]color.Color, factor*factor)
@@ -51,7 +52,8 @@ func superSampling(p *point, width, height, factor int) color.Color {
 		for ix := 0; ix < factor; ix++ {
 			// Using one dimension array because do not care about pixel order,
 			// because at the end we are calculating avarage for all sub-pixels.
-			subPixels[iy*factor+ix] = mandelbrot(complex(xCords[ix], yCords[iy]))
+			subPixels[iy*factor+ix] = mandelbrot(
+				complex(xCords[ix], yCords[iy]), smooth)
 		}
 	}
 
@@ -68,24 +70,36 @@ func superSampling(p *point, width, height, factor int) color.Color {
 	return color.RGBA64{uint16(rAvg), uint16(gAvg), uint16(bAvg), 0xFFFF}
 }
 
-func mandelbrot(z complex128) color.Color {
+func mandelbrot(z complex128, smooth bool) color.Color {
 	const iterations = 255
 	const contrast = 15
 
 	var v complex128
+	var step float64
+	var skip uint8
+
+	// TODO: create more common approach here
+	if smooth {
+		skip = 2
+	}
+
 	for n := uint8(0); n < iterations; n++ {
 		v = v*v + z
 		vAbs := cmplx.Abs(v)
-		if vAbs > 2 {
-			// smooth := float64(n) + 1 - math.Log(math.Log(vAbs))/math.Log(2)
-			r, g, b := htcmap.AsUInt8(float64(n*contrast), 0, iterations)
+		if vAbs > 2 && n > skip {
+			if smooth {
+				step = (float64(n) + 1 - math.Log(math.Log(vAbs))/math.Log(2)) * contrast
+			} else {
+				step = float64(n * contrast)
+			}
+			r, g, b := htcmap.AsUInt8(step, 0, iterations)
 			return color.RGBA{r, g, b, 255}
 		}
 	}
 	return color.Black
 }
 
-func compute(width, height, factor, workers int) <-chan *pixel {
+func compute(width, height, factor, workers int, smooth bool) <-chan *pixel {
 	var wg sync.WaitGroup
 	points := make(chan *point)
 	pixels := make(chan *pixel, workers)
@@ -110,7 +124,7 @@ func compute(width, height, factor, workers int) <-chan *pixel {
 				if !ok {
 					return
 				}
-				c := superSampling(p, width, height, factor)
+				c := superSampling(p, width, height, factor, smooth)
 				pixels <- &pixel{point{p.x / factor, p.y / factor}, c}
 			}
 		}()
@@ -129,6 +143,7 @@ func main() {
 	workers := flag.Int("workers", 2, "number of workers for calculation")
 	width := flag.Int("width", 1536, "width of png image in pixels, WxH=3x2")
 	height := flag.Int("height", 1024, "height of png image in pixels, WxH=3x2")
+	smooth := flag.Bool("smooth", false, "enables smoothing color translation")
 	flag.Parse()
 	if *factor < 1 || *factor > 256 {
 		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *factor)
@@ -142,7 +157,7 @@ func main() {
 
 	img := image.NewRGBA(image.Rect(0, 0, *width, *height))
 
-	for p := range compute(*width, *height, *factor, *workers) {
+	for p := range compute(*width, *height, *factor, *workers, *smooth) {
 		img.Set(p.x, p.y, p.c)
 	}
 
