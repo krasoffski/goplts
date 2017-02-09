@@ -9,7 +9,6 @@ import (
 	"math"
 	"math/cmplx"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/krasoffski/gomill/htcmap"
@@ -137,30 +136,6 @@ func compute(width, height, factor, workers int, smooth bool) <-chan *pixel {
 	}()
 
 	return pixels
-}
-
-type intValue struct {
-	v int
-}
-
-func (i *intValue) String() string {
-	return fmt.Sprintf("%d", i.v)
-}
-
-func (i *intValue) Set(s string) error {
-	v, err := strconv.ParseInt(s, 10, 8)
-	i.v = int(v)
-	if err != nil {
-		return err
-	}
-	if v < 1 {
-		return fmt.Errorf("invalid value %d, [1, 255]", v)
-	}
-	return nil
-}
-
-func (i *intValue) Get() int {
-	return i.v
 }
 
 func main() {
