@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/cmplx"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/krasoffski/gomill/htcmap"
@@ -138,19 +139,43 @@ func compute(width, height, factor, workers int, smooth bool) <-chan *pixel {
 	return pixels
 }
 
+type intValue struct {
+	v int
+}
+
+func (i *intValue) String() string {
+	return fmt.Sprintf("%d", i.v)
+}
+
+func (i *intValue) Set(s string) error {
+	v, err := strconv.ParseInt(s, 10, 8)
+	i.v = int(v)
+	if err != nil {
+		return err
+	}
+	if v < 1 {
+		return fmt.Errorf("invalid value %d, [1, 255]", v)
+	}
+	return nil
+}
+
+func (i *intValue) Get() int {
+	return i.v
+}
+
 func main() {
-	factor := flag.Int("factor", 2, "scale factor for super sampling")
-	workers := flag.Int("workers", 2, "number of workers for calculation")
+	factor := flag.Int("factor", 2, "scale factor for super sampling, [1, 10]")
+	workers := flag.Int("workers", 2, "number of workers for calculation, [1, 512]")
 	width := flag.Int("width", 1536, "width of png image in pixels, WxH=3x2")
 	height := flag.Int("height", 1024, "height of png image in pixels, WxH=3x2")
 	smooth := flag.Bool("smooth", false, "enables smooth color transition")
 	flag.Parse()
-	if *factor < 1 || *factor > 256 {
-		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *factor)
+	if *factor < 1 || *factor > 10 {
+		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 10]\n", *factor)
 		os.Exit(1)
 	}
 
-	if *workers < 1 || *workers > 256 {
+	if *workers < 1 || *workers > 512 {
 		fmt.Fprintf(os.Stderr, "error: invalid value '%d', [1, 255]\n", *workers)
 		os.Exit(1)
 	}
