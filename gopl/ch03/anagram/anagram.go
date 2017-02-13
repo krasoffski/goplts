@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 )
 
 type runes []rune
+
+type sortFunc func(string) string
 
 func (s runes) Less(i, j int) bool {
 	return s[i] < s[j]
@@ -24,6 +27,12 @@ func sortString(s string) string {
 	r := []rune(s)
 	sort.Sort(runes(r))
 	return string(r)
+}
+
+func sortString2(s string) string {
+	words := strings.Split(s, "")
+	sort.Strings(words)
+	return strings.Join(words, "")
 }
 
 func isAnagram(first, second string) bool {
@@ -51,11 +60,11 @@ func isAnagram(first, second string) bool {
 	return true
 }
 
-func isAnagram2(first, second string) bool {
+func isAnagram2(first, second string, f sortFunc) bool {
 	if len(first) != len(second) {
 		return false
 	}
-	return sortString(first) == sortString(second)
+	return f(first) == f(second)
 }
 
 func main() {
@@ -63,5 +72,5 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Too few arguments")
 		os.Exit(1)
 	}
-	fmt.Println(isAnagram2(os.Args[1], os.Args[2]))
+	fmt.Println(isAnagram2(os.Args[1], os.Args[2], sortString2))
 }
