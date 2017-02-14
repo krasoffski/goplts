@@ -4,14 +4,20 @@ import "testing"
 
 var INPUT = "1111111111111111111111111111111"
 
-func BenchmarkComma(b *testing.B) {
+func BenchmarkCommaOrigin(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		comma(INPUT)
+		commaOrigin(INPUT)
 	}
 }
 
-func BenchmarkComm2(b *testing.B) {
+func BenchmarkCommaDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		comma2(INPUT)
+		commaDecimal(INPUT)
+	}
+}
+
+func BenchmarkCommaFloat(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		commaFloat(INPUT)
 	}
 }
