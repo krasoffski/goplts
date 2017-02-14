@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -30,13 +31,14 @@ func sortString(s string) string {
 }
 
 func sortString2(s string) string {
-	words := strings.Split(s, "")
-	sort.Strings(words)
-	return strings.Join(words, "")
+	letters := strings.Split(s, "")
+	sort.Strings(letters)
+	return strings.Join(letters, "")
 }
 
 func isAnagram(first, second string) bool {
-	if len(first) != len(second) {
+	lf, ls := len(first), len(second)
+	if lf != ls {
 		return false
 	}
 	seenFirst := make(map[rune]int)
@@ -65,6 +67,17 @@ func isAnagram2(first, second string, f sortFunc) bool {
 		return false
 	}
 	return f(first) == f(second)
+}
+
+func isAnagram3(first, second string) bool {
+	if len(first) != len(second) {
+		return false
+	}
+	chars1 := strings.Split(first, "")
+	chars2 := strings.Split(second, "")
+	sort.Strings(chars1)
+	sort.Strings(chars2)
+	return reflect.DeepEqual(chars1, chars2)
 }
 
 func main() {
