@@ -41,7 +41,7 @@ func main() {
 				return
 			}
 		}
-		fmt.Fprintf(os.Stderr, "error: invalid sha '%s'\n", *shaType)
+		fmt.Fprintf(os.Stderr, "error: invalid sha type '%s'\n", *shaType)
 		flag.Usage()
 		os.Exit(1)
 	})
