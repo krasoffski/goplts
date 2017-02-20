@@ -1,16 +1,24 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"crypto/sha512"
 	"flag"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 )
 
 var shaTypes = [...]string{"sha256", "sha384", "sha512"}
+
+func calcSHA(h hash.Hash) []byte {
+	if _, err := io.Copy(h, os.Stdin); err != nil {
+		fmt.Fprintf(os.Stderr, "error: unable to copy from stdin: %s", err)
+		os.Exit(1)
+	}
+	return h.Sum(nil)
+}
 
 func main() {
 
@@ -27,19 +35,12 @@ func main() {
 		os.Exit(1)
 	})
 
-	var buff bytes.Buffer
-	if _, err := io.Copy(&buff, os.Stdin); err != nil {
-		fmt.Fprintf(os.Stderr, "error: unable to copy from stdin: %s", err)
-		os.Exit(1)
-	}
-
-	// TODO: think about buff.Bytes() to find better way for copying.
 	switch *shaType {
 	case "sha256":
-		fmt.Printf("%x\n", sha256.Sum256(buff.Bytes()))
+		fmt.Printf("%x\n", calcSHA(sha256.New()))
 	case "sha384":
-		fmt.Printf("%x\n", sha512.Sum384(buff.Bytes()))
+		fmt.Printf("%x\n", calcSHA(sha512.New384()))
 	case "sha512":
-		fmt.Printf("%x\n", sha512.Sum512(buff.Bytes()))
+		fmt.Printf("%x\n", calcSHA(sha512.New()))
 	}
 }
