@@ -28,8 +28,12 @@ func main() {
 	})
 
 	var buff bytes.Buffer
-	io.Copy(&buff, os.Stdin)
+	if _, err := io.Copy(&buff, os.Stdin); err != nil {
+		fmt.Fprintf(os.Stderr, "error: unable to copy from stdin: %s", err)
+		os.Exit(1)
+	}
 
+	// TODO: think about buff.Bytes() to find better way for copying.
 	switch *shaType {
 	case "sha256":
 		fmt.Printf("%x\n", sha256.Sum256(buff.Bytes()))
