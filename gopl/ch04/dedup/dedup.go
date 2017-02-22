@@ -6,7 +6,9 @@ import (
 	"strings"
 )
 
-func dedup(seq []string) []string {
+type dedupfn func([]string) []string
+
+func dedupInplace(seq []string) []string {
 	if len(seq) == 0 {
 		return seq
 	}
@@ -25,16 +27,31 @@ func dedup(seq []string) []string {
 	return seq[:i+1]
 }
 
-func dedupAppend(s []string) []string {
-	return append([]string{}, dedup(s)...)
+func dedupAppend(s []string, fn dedupfn) []string {
+	return append([]string{}, fn(s)...)
 }
 
-func dedupCopy(s []string) []string {
+func dedupCopy(s []string, fn dedupfn) []string {
 	result := make([]string, len(s))
-	copy(result, dedup(s))
+	copy(result, fn(s))
 	return result
 }
 
+func remove(seq []string, i int) []string {
+	return seq[:i+copy(seq[i:], seq[i+1:])]
+}
+
+func dedupRemove(seq []string) []string {
+	for i := 0; i < len(seq)-1; {
+		if seq[i] == seq[i+1] {
+			seq = remove(seq, i+1)
+		} else {
+			i++
+		}
+	}
+	return seq
+}
+
 func main() {
-	fmt.Println(strings.Join(dedup(os.Args[1:]), " "))
+	fmt.Println(strings.Join(dedupInplace(os.Args[1:]), " "))
 }

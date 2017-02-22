@@ -15,42 +15,62 @@ var INPUT = []string{
 
 var OUTPUT = []string{"a", "b", "c", "d", "e", "f", "g", "h"}
 
-func TestDedupDiff(t *testing.T) {
+func testFunc(t *testing.T, in, exp []string, fn dedupfn) {
 	var result []string
 
-	result = dedup(INPUT)
-	if len(OUTPUT) != len(result) {
-		t.Errorf("got len %d, but expected %d", len(result), len(OUTPUT))
+	result = fn(in)
+	if len(exp) != len(result) {
+		t.Errorf("got len %d, but expected %d", len(result), len(exp))
 	}
-	for i, s := range OUTPUT {
+	for i, s := range exp {
 		if s != result[i] {
 			t.Errorf("got str %s, but expected %s", result[i], s)
 		}
 	}
 }
 
-func TestDedupSame(t *testing.T) {
-	var result []string
+func TestDedupInplaceDiff(t *testing.T) {
+	input := append([]string{}, INPUT...)
+	testFunc(t, input, OUTPUT, dedupInplace)
+}
 
-	result = dedup(OUTPUT)
-	if len(OUTPUT) != len(result) {
-		t.Errorf("got len %d, but expected %d", len(result), len(OUTPUT))
-	}
-	for i, s := range OUTPUT {
-		if s != result[i] {
-			t.Errorf("got str %s, but expected %s", result[i], s)
-		}
+func TestDedupInplaceSame(t *testing.T) {
+	testFunc(t, OUTPUT, OUTPUT, dedupInplace)
+}
+
+func TestDedupRemoveDiff(t *testing.T) {
+	input := append([]string{}, INPUT...)
+	testFunc(t, input, OUTPUT, dedupRemove)
+}
+
+func TestDedupRemoveSame(t *testing.T) {
+	testFunc(t, OUTPUT, OUTPUT, dedupRemove)
+}
+
+func BenchmarkDedupInplaceAppend(b *testing.B) {
+	input := append([]string{}, INPUT...)
+	for i := 0; i < b.N; i++ {
+		dedupAppend(input, dedupInplace)
 	}
 }
 
-func BenchmarkDedupAppend(b *testing.B) {
+func BenchmarkDedupInplaceCopy(b *testing.B) {
+	input := append([]string{}, INPUT...)
 	for i := 0; i < b.N; i++ {
-		dedupAppend(INPUT)
+		dedupCopy(input, dedupInplace)
 	}
 }
 
-func BenchmarkDedupCopy(b *testing.B) {
+func BenchmarkDedupRemoveAppend(b *testing.B) {
+	input := append([]string{}, INPUT...)
 	for i := 0; i < b.N; i++ {
-		dedupCopy(INPUT)
+		dedupAppend(input, dedupRemove)
+	}
+}
+
+func BenchmarkDedupRemoveCopy(b *testing.B) {
+	input := append([]string{}, INPUT...)
+	for i := 0; i < b.N; i++ {
+		dedupCopy(input, dedupRemove)
 	}
 }
