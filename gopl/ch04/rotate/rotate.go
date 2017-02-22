@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-func abs(x int) int {
+func absInt(x int) int {
 	if x < 0 {
 		return -x
 	}
@@ -27,7 +27,7 @@ func rotate(arr []string, shift int) {
 	} else {
 		fn = rotateRightOne
 	}
-	for i := 0; i < abs(shift); i++ {
+	for i := 0; i < absInt(shift); i++ {
 		fn(arr)
 	}
 }
