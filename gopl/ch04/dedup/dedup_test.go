@@ -47,6 +47,20 @@ func TestDedupRemoveSame(t *testing.T) {
 	testFunc(t, OUTPUT, OUTPUT, dedupRemove)
 }
 
+func BenchmarkDedupInplace(b *testing.B) {
+	input := append([]string{}, INPUT...)
+	for i := 0; i < b.N; i++ {
+		dedupInplace(input)
+	}
+}
+
+func BenchmarkDedupRemove(b *testing.B) {
+	input := append([]string{}, INPUT...)
+	for i := 0; i < b.N; i++ {
+		dedupRemove(input)
+	}
+}
+
 func BenchmarkDedupInplaceAppend(b *testing.B) {
 	input := append([]string{}, INPUT...)
 	for i := 0; i < b.N; i++ {
@@ -54,17 +68,17 @@ func BenchmarkDedupInplaceAppend(b *testing.B) {
 	}
 }
 
-func BenchmarkDedupInplaceCopy(b *testing.B) {
-	input := append([]string{}, INPUT...)
-	for i := 0; i < b.N; i++ {
-		dedupCopy(input, dedupInplace)
-	}
-}
-
 func BenchmarkDedupRemoveAppend(b *testing.B) {
 	input := append([]string{}, INPUT...)
 	for i := 0; i < b.N; i++ {
 		dedupAppend(input, dedupRemove)
+	}
+}
+
+func BenchmarkDedupInplaceCopy(b *testing.B) {
+	input := append([]string{}, INPUT...)
+	for i := 0; i < b.N; i++ {
+		dedupCopy(input, dedupInplace)
 	}
 }
 

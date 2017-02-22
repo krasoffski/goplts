@@ -1,0 +1,8 @@
+PASS
+BenchmarkDedupInplace-4      	 3000000	       511 ns/op
+BenchmarkDedupRemove-4       	 1000000	      1833 ns/op
+BenchmarkDedupInplaceAppend-4	 1000000	      1130 ns/op
+BenchmarkDedupRemoveAppend-4 	 1000000	      2792 ns/op
+BenchmarkDedupInplaceCopy-4  	 1000000	      1182 ns/op
+BenchmarkDedupRemoveCopy-4   	 1000000	      3644 ns/op
+ok  	github.com/krasoffski/goplts/gopl/ch04/dedup	12.746s
