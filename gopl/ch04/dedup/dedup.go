@@ -12,14 +12,16 @@ func dedup(seq []string) []string {
 	}
 
 	i := 0
-	for j := 1; j < len(seq); j++ {
-		if seq[i] != seq[j] {
-			i++
-			seq[i] = seq[j]
+	for _, s := range seq[1:] {
+		if seq[i] == s {
+			continue
 		}
+		i++
+		seq[i] = s
 	}
 	// Here is we keep all source slice in memory. Need to copy or append to
-	// new one to deacrease memory usage. See bellow for such approaches.
+	// new one to deacrease memory usage and to allow GC perform clean up.
+	// See bellow function for such solutions.
 	return seq[:i+1]
 }
 
