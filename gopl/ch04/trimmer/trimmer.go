@@ -19,8 +19,8 @@ func trimmer(arr []byte) []byte {
 			}
 			keep = 0
 		} else {
-			keep = 1
 			i += size
+			keep = 1
 		}
 	}
 	return arr
