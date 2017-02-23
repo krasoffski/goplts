@@ -7,22 +7,19 @@ import (
 )
 
 func trimmer(arr []byte) []byte {
-	seen := false
+	keep := 1 // Keep replaced space or skip as repeated.
 	for i := 0; i < len(arr); {
-
 		r, size := utf8.DecodeRune(arr[i:])
 
 		if unicode.IsSpace(r) {
-			if !seen {
-				arr = arr[:i+1+copy(arr[i+1:], arr[i+size:])]
+			arr = arr[:i+keep+copy(arr[i+keep:], arr[i+size:])]
+			if keep == 1 {
 				arr[i] = 0x20
 				i++
-			} else {
-				arr = arr[:i+copy(arr[i:], arr[i+size:])]
 			}
-			seen = true
+			keep = 0
 		} else {
-			seen = false
+			keep = 1
 			i += size
 		}
 	}
