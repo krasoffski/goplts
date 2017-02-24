@@ -55,6 +55,7 @@ func main() {
 	counts, err := charcounter(os.Stdin)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "charcount: %s", err)
+		os.Exit(1)
 	}
 	// TODO: add descending order output (sort).
 	fmt.Printf("type\tcount\n")
