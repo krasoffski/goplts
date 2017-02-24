@@ -6,43 +6,59 @@ import (
 	"io"
 	"os"
 	"unicode"
-	"unicode/utf8"
 )
 
-func main() {
-	counts := make(map[rune]int)
-	var utflen [utf8.UTFMax + 1]int
-	invalid := 0
+type isfunc func(rune) bool
 
-	in := bufio.NewReader(os.Stdin)
+func charcounter(reader io.Reader) (map[string]int, error) {
+
+	counts := map[string]int{}
+
+	functs := map[string]isfunc{
+		"digit": unicode.IsDigit,
+		"space": unicode.IsSpace,
+		"punct": unicode.IsPunct,
+		"symbl": unicode.IsSymbol,
+		"lettr": unicode.IsLetter,
+	}
+
+	in := bufio.NewReader(reader)
 	for {
-		r, n, err := in.ReadRune()
+		r, _, err := in.ReadRune()
 		if err == io.EOF {
 			break
 		}
+		// Skipping all previously collected stat.
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "charcount: %v\n", err)
-			os.Exit(1)
+			return nil, err
 		}
-		if r == unicode.ReplacementChar && n == 1 {
-			invalid++
-			continue
-		}
-		counts[r]++
-		utflen[n]++
-	}
-	fmt.Printf("rune\tcount\n")
-	for c, n := range counts {
-		fmt.Printf("%q\t%d\n", c, n)
-	}
-	fmt.Printf("\nlen\tcount\n")
-	for i, n := range utflen {
-		if i > 0 {
-			fmt.Printf("%d\t%d\n", i, n)
-		}
-	}
-	if invalid > 0 {
-		fmt.Printf("\n%d invalid UTF-8 characters\n", invalid)
-	}
 
+		for t, fn := range functs {
+			if fn(r) {
+				counts[t]++
+			}
+		}
+	}
+	return counts, nil
+}
+
+/*
+  $ cat /usr/share/dict/american-english | go run charconunt.go
+  type    count
+  lettr   813173
+  space   99171
+  punct   26243
+*/
+
+func main() {
+
+	counts, err := charcounter(os.Stdin)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "charcount: %s", err)
+	}
+	// TODO: add descending order output (sort).
+	fmt.Printf("type\tcount\n")
+	for t, n := range counts {
+		fmt.Printf("%s\t%d\n", t, n)
+	}
 }
