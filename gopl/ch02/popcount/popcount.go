@@ -8,7 +8,7 @@ func init() {
 	}
 }
 
-func PopCount1(x uint64) int {
+func popCount1(x uint64) int {
 	return int(pc[byte(x>>(0*8))] +
 		pc[byte(x>>(1*8))] +
 		pc[byte(x>>(2*8))] +
@@ -19,7 +19,7 @@ func PopCount1(x uint64) int {
 		pc[byte(x>>(7*8))])
 }
 
-func PopCount2(x uint64) int {
+func popCount2(x uint64) int {
 	num := 0
 	for i := uint8(0); i < 64; i++ {
 		if x&(1<<i) != 0 {
@@ -29,7 +29,7 @@ func PopCount2(x uint64) int {
 	return num
 }
 
-func PopCount3(x uint64) int {
+func popCount3(x uint64) int {
 	num := 0
 	for x != 0 {
 		x = x & (x - 1)
@@ -38,7 +38,7 @@ func PopCount3(x uint64) int {
 	return num
 }
 
-func PopCount4(x uint64) int {
+func popCount4(x uint64) int {
 	var num byte
 	var i uint
 	for i = 0; i < 8; i++ {
