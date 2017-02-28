@@ -94,6 +94,11 @@ func (c *Cache) Update(force bool) error {
 	return nil
 }
 
+// Search reads cache represented as JSON from Reader and unmarshal them to Cache.
+func (c *Cache) Search(s []string) (map[int]*Cache, error) {
+	return nil, nil
+}
+
 // Load reads cache represented as JSON from Reader and unmarshal them to Cache.
 func (c *Cache) Load(r io.Reader) error {
 	if err := json.NewDecoder(r).Decode(c); err != nil {
