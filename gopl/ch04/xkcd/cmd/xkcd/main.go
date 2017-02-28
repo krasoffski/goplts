@@ -87,7 +87,6 @@ func showCache(cache *xkcd.Cache, num int) {
 }
 
 func searchCache(cache *xkcd.Cache, s []string) {
-	fmt.Println(s)
 	if len(s) == 0 {
 		fmt.Println("empty search query")
 		return
@@ -95,6 +94,16 @@ func searchCache(cache *xkcd.Cache, s []string) {
 	for k, v := range cache.Search(s) {
 		fmt.Printf("#%5d %21.20s %.155s\n", k, v.URL, v.SafeTitle)
 	}
+}
+
+func statusCache(cache *xkcd.Cache) {
+	fmt.Printf("Last comic: %d, checked at: %d-%02d-%02d %02d:%02d\n",
+		cache.LastNum,
+		cache.CheckedAt.Year(),
+		cache.CheckedAt.Month(),
+		cache.CheckedAt.Day(),
+		cache.CheckedAt.Hour(),
+		cache.CheckedAt.Minute())
 }
 
 func main() {
@@ -125,7 +134,7 @@ func main() {
 	case "search":
 		searchCmd.Parse(os.Args[2:])
 	default:
-		fmt.Println("init|sync|status|show|search subcommand is required")
+		fmt.Println("init|sync|show|status|search subcommand is required")
 		os.Exit(1)
 	}
 
@@ -149,6 +158,10 @@ func main() {
 	if searchCmd.Parsed() {
 		loadCache(cache)
 		searchCache(cache, searchCmd.Args())
+	}
+	if statusCmd.Parsed() {
+		loadCache(cache)
+		statusCache(cache)
 	}
 
 }
