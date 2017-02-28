@@ -72,7 +72,7 @@ func (c *Cache) Update(force bool) error {
 		c.Comics = make(map[int]*Info, newLast.Num)
 	}
 
-	for i := 400; i <= newLast.Num; i++ {
+	for i := c.LastNum + 1; i <= newLast.Num; i++ {
 
 		if ok := c.Comics[i]; ok != nil {
 			continue
