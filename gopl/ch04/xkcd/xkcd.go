@@ -12,6 +12,8 @@ import (
 const URL = "http://xkcd.com"
 const INFO = "info.0.json"
 
+var httpClient = http.Client{Timeout: time.Duration(time.Second * 10)}
+
 // Info represents xkcd comic information.
 type Info struct {
 	Alt        string
@@ -24,15 +26,21 @@ type Info struct {
 	SafeTitle  string `json:"safe_title"`
 	Transcript string
 	Year       string
+	URL        string
 }
 
 // FetchInfo gets xkcd comic information as json and unpack one to info struct.
 func FetchInfo(url string) (*Info, error) {
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http status %d", resp.StatusCode)
+	}
+
 	var info Info
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
 		return nil, err
@@ -64,18 +72,22 @@ func (c *Cache) Update(force bool) error {
 		c.Comics = make(map[int]*Info, newLast.Num)
 	}
 
-	for i := c.LastNum + 1; i <= newLast.Num; i++ {
+	for i := 400; i <= newLast.Num; i++ {
 
 		if ok := c.Comics[i]; ok != nil {
 			continue
 		}
-		url := fmt.Sprintf("%s/%d/%s", URL, i, INFO)
-		info, err := FetchInfo(url)
+
+		comicURL := fmt.Sprintf("%s/%d/", URL, i)
+		info, err := FetchInfo(comicURL + INFO)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "update error: %s, %s\n", url, err)
+			fmt.Fprintf(os.Stderr, "update error: %s, %s\n", comicURL, err)
 			continue
 		}
-		c.Comics[i] = info // no-thread safe
+
+		// No-thread safe
+		info.URL = comicURL
+		c.Comics[i] = info
 	}
 	c.CheckedAt = time.Now()
 	c.LastNum = newLast.Num
