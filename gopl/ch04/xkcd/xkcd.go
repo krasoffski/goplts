@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -94,9 +95,19 @@ func (c *Cache) Update(force bool) error {
 	return nil
 }
 
-// Search reads cache represented as JSON from Reader and unmarshal them to Cache.
-func (c *Cache) Search(s []string) (map[int]*Cache, error) {
-	return nil, nil
+// Search searches required strings within cache and returns found comic infos.
+func (c *Cache) Search(arr []string) map[int]*Info {
+	results := make(map[int]*Info)
+	for k, v := range c.Comics {
+		for _, s := range arr {
+			if strings.Contains(v.Transcript, s) ||
+				strings.Contains(v.SafeTitle, s) {
+				results[k] = v
+				break
+			}
+		}
+	}
+	return results
 }
 
 // Load reads cache represented as JSON from Reader and unmarshal them to Cache.

@@ -86,6 +86,17 @@ func showCache(cache *xkcd.Cache, num int) {
 	}
 }
 
+func searchCache(cache *xkcd.Cache, s []string) {
+	fmt.Println(s)
+	if len(s) == 0 {
+		fmt.Println("empty search query")
+		return
+	}
+	for k, v := range cache.Search(s) {
+		fmt.Printf("#%5d %21.20s %.155s\n", k, v.URL, v.SafeTitle)
+	}
+}
+
 func main() {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 	syncCmd := flag.NewFlagSet("sync", flag.ExitOnError)
@@ -134,6 +145,10 @@ func main() {
 	if showCmd.Parsed() {
 		loadCache(cache)
 		showCache(cache, *showNumPtr)
+	}
+	if searchCmd.Parsed() {
+		loadCache(cache)
+		searchCache(cache, searchCmd.Args())
 	}
 
 }
