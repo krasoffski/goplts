@@ -11,6 +11,7 @@ import (
 	"github.com/krasoffski/goplts/gopl/ch04/xkcd"
 )
 
+// NAME is name of comic cache file.
 const NAME = "comic.cache"
 
 func initCache(cache *xkcd.Cache, force bool) error {
