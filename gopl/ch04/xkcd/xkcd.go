@@ -35,35 +35,37 @@ func FetchComicInfo(url string) (*ComicInfo, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
 		return nil, err
 	}
+	fmt.Printf("loaded %s\n", url)
 	return &info, nil
 }
 
 type Cache struct {
-	// TODO: think about slice instead of map
-	Comics      map[int]*ComicInfo
-	Last        int
-	LastChecked time.Time
-	TTL         time.Duration
+	CheckedAt time.Time
+	Comics    map[int]*ComicInfo
+	LastNum   int
+	// TTL       time.Duration
 }
 
-func (c *Cache) Update() error {
-	last, err := FetchComicInfo(URL + "/" + INFO)
-	if err != nil {
-		return err
-	}
-	if c.Last >= last.Num {
-		return nil
-	}
-	for i := 1; i <= 200; i++ {
+func NewCache() *Cache {
+	return &Cache{Comics: make(map[int]*ComicInfo)}
+}
+
+func (c *Cache) Update(newLast int, force bool) error {
+	for i := c.LastNum + 1; i <= newLast; i++ {
+		// TODO: think about _, ok := c.Comics[i] and moving force to high level
+		if ok := c.Comics[i]; !force && ok != nil {
+			continue
+		}
 		url := fmt.Sprintf("%s/%d/%s", URL, i, INFO)
 		info, err := FetchComicInfo(url)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "xkcd error for %s: %s", url, err)
+			fmt.Fprintf(os.Stderr, "xkcd error for %s: %s\n", url, err)
 			continue
 		}
 		c.Comics[i] = info
 	}
-	c.LastChecked = time.Now()
+	c.CheckedAt = time.Now()
+	c.LastNum = newLast
 	return nil
 }
 
@@ -79,8 +81,4 @@ func (c *Cache) Load(r io.Reader) error {
 		return err
 	}
 	return nil
-}
-
-func NewCache(ttl time.Duration) *Cache {
-	return &Cache{Comics: make(map[int]*ComicInfo), TTL: ttl}
 }
