@@ -98,7 +98,7 @@ func searchCache(cache *xkcd.Cache, s []string) {
 }
 
 func statusCache(cache *xkcd.Cache) {
-	fmt.Printf("Last comic: %d, checked at: %d-%02d-%02d %02d:%02d\n",
+	fmt.Printf("Last comic: %d, cached at: %d-%02d-%02d %02d:%02d\n",
 		cache.LastNum,
 		cache.CheckedAt.Year(),
 		cache.CheckedAt.Month(),
