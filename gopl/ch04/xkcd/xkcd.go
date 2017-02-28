@@ -2,11 +2,14 @@ package xkcd
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"time"
 )
 
-const URL = "http://xkcd.com/"
+const URL = "http://xkcd.com"
 const INFO = "info.0.json"
 
 type ComicInfo struct {
@@ -22,7 +25,7 @@ type ComicInfo struct {
 	Year       string
 }
 
-func FetchInfo(url string) (*ComicInfo, error) {
+func FetchComicInfo(url string) (*ComicInfo, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -36,18 +39,48 @@ func FetchInfo(url string) (*ComicInfo, error) {
 }
 
 type Cache struct {
-	Comics      []*ComicInfo
-	Count       int
-	FilePath    string
+	// TODO: think about slice instead of map
+	Comics      map[int]*ComicInfo
+	Last        int
 	LastChecked time.Time
 	TTL         time.Duration
 }
 
-func (c *Cache) Update(force bool) error {
-
+func (c *Cache) Update() error {
+	last, err := FetchComicInfo(URL + "/" + INFO)
+	if err != nil {
+		return err
+	}
+	if c.Last >= last.Num {
+		return nil
+	}
+	for i := 1; i <= 200; i++ {
+		url := fmt.Sprintf("%s/%d/%s", URL, i, INFO)
+		info, err := FetchComicInfo(url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "xkcd error for %s: %s", url, err)
+			continue
+		}
+		c.Comics[i] = info
+	}
+	c.LastChecked = time.Now()
 	return nil
 }
 
-func NewCache(filePath string, ttl time.Duration) (*Cache, error) {
-	return &Cache{}, nil
+func (c *Cache) Dump(w io.Writer) error {
+	if err := json.NewEncoder(w).Encode(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Cache) Load(r io.Reader) error {
+	if err := json.NewDecoder(r).Decode(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewCache(ttl time.Duration) *Cache {
+	return &Cache{Comics: make(map[int]*ComicInfo), TTL: ttl}
 }
