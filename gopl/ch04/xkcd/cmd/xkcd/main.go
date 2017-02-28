@@ -1,71 +1,105 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"time"
 
 	"github.com/krasoffski/goplts/gopl/ch04/xkcd"
 )
 
-const name = "comic.cache"
+const NAME = "comic.cache"
 
-var (
-	ttl time.Duration = time.Duration(time.Hour * 168) // 7 days
-)
+func initCache(cache *xkcd.Cache, force bool) error {
 
-func initFunc(cache *xkcd.Cache) {
-	file, err := os.Create(name)
+	if _, err := os.Stat(NAME); !force && err == nil {
+		return fmt.Errorf("init error: cache file %s already exists", NAME)
+	}
+
+	// TODO: think about what perform first fetch or file create.
+	if err := cache.Update(false); err != nil {
+		return fmt.Errorf("update error: %s", err)
+	}
+
+	file, err := os.Create(NAME)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	buf := bufio.NewWriter(file)
+
+	if err := cache.Dump(buf); err != nil {
+		return fmt.Errorf("save error: %s", err)
+	}
+	return nil
+}
+
+func loadCache(cache *xkcd.Cache) {
+	file, err := os.Open(NAME)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer file.Close()
 
-	if err = cache.Update(10, false); err != nil {
-		log.Fatalln(err)
+	err = cache.Load(file)
+
+	if err == io.EOF {
+		log.Fatalln("comic cache is empty")
 	}
 
-	if err = cache.Dump(file); err != nil {
+	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func loadFunc(cache *xkcd.Cache) {
-	file, err := os.Open(name)
+func dumpCache(cache *xkcd.Cache) {
+	file, err := os.Create(NAME)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer file.Close()
 
-	if err = cache.Load(file); err != nil && err != io.EOF {
+	if err := cache.Dump(file); err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func dumpFunc(cache *xkcd.Cache) {
-	file, err := os.Create(name)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer file.Close()
-
-	if err = cache.Dump(file); err != nil {
-		log.Fatalln(err)
+// TODO: fix formting issue
+func showCache(cache *xkcd.Cache, num int) {
+	if num > 0 {
+		val := cache.Comics[num]
+		if val == nil {
+			fmt.Printf("#%-4d NO SUCH COMIC IN CACHE\n", num)
+			return
+		}
+		fmt.Printf("#%-4d %20.20s %.155s\n", num, val.URL, val.SafeTitle)
+	} else if num == 0 {
+		for k, v := range cache.Comics {
+			fmt.Printf("#%5d %21.20s %.155s\n", k, v.URL, v.SafeTitle)
+		}
+	} else {
+		log.Fatalf("error: negative comic num  %d is not allowed\n", num)
 	}
 }
 
 func main() {
 	initCmd := flag.NewFlagSet("init", flag.ExitOnError)
 	syncCmd := flag.NewFlagSet("sync", flag.ExitOnError)
+	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
+	statusCmd := flag.NewFlagSet("status", flag.ExitOnError)
+	searchCmd := flag.NewFlagSet("search", flag.ExitOnError)
 
-	// initTTLPtr := initCmd.Duration("ttl", ttl, "Time before next a refresh.")
-	// syncForcePtr := syncCmd.Bool("force", false, "Force sync with xkcd site.")
+	initForcePtr := initCmd.Bool("force", false, "Force init with xkcd site.")
+	syncForcePtr := syncCmd.Bool("force", false, "Force sync with xkcd site.")
+
+	showNumPtr := showCmd.Int("num", 0, "Number of comic to show.")
 
 	if len(os.Args) < 2 {
-		fmt.Println("init or sync subcommand is required")
+		fmt.Println("init|sync|status|show|search subcommand is required")
 		os.Exit(1)
 	}
 	switch os.Args[1] {
@@ -73,20 +107,33 @@ func main() {
 		initCmd.Parse(os.Args[2:])
 	case "sync":
 		syncCmd.Parse(os.Args[2:])
+	case "show":
+		showCmd.Parse(os.Args[2:])
+	case "status":
+		statusCmd.Parse(os.Args[2:])
+	case "search":
+		searchCmd.Parse(os.Args[2:])
 	default:
-		flag.PrintDefaults()
+		fmt.Println("init|sync|status|show|search subcommand is required")
 		os.Exit(1)
 	}
 
 	cache := xkcd.NewCache()
 
 	if initCmd.Parsed() {
-		initFunc(cache)
+		if err := initCache(cache, *initForcePtr); err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	if syncCmd.Parsed() {
-		loadFunc(cache)
-		cache.Update(15, false)
-		dumpFunc(cache)
+		loadCache(cache)
+		cache.Update(*syncForcePtr)
+		dumpCache(cache)
 	}
+	if showCmd.Parsed() {
+		loadCache(cache)
+		showCache(cache, *showNumPtr)
+	}
+
 }
