@@ -15,7 +15,7 @@ import (
 // NAME is name of comic cache file.
 const NAME = "comic.cache"
 
-const templ = `{{ len .Comics }} comics
+const templ = `{{ len .Comics }} comic(s)
 {{- $withT := .WithT}}
 {{ range $key, $value := .Comics }}----------------------------------------
 Num: {{ $value.Num }}
@@ -28,6 +28,11 @@ Transcript: {{ $value.Transcript }}
 
 var report = template.Must(template.New("comicslist").Parse(templ))
 
+func printfErrAndExit(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, a...)
+	os.Exit(1)
+}
+
 func printComics(comics map[int]*xkcd.Info, showTranscript bool) {
 	err := report.Execute(os.Stdout, struct {
 		Comics map[int]*xkcd.Info
@@ -35,46 +40,35 @@ func printComics(comics map[int]*xkcd.Info, showTranscript bool) {
 	}{comics, showTranscript})
 
 	if err != nil {
-		log.Fatal(err)
+		printfErrAndExit("print cache error: %s\n", err)
 	}
 }
 
-func initCache(cache *xkcd.Cache, force bool) error {
+func initCache(cache *xkcd.Cache, force bool) {
 
 	if _, err := os.Stat(NAME); !force && err == nil {
-		return fmt.Errorf("init error: cache file %s already exists", NAME)
+		printfErrAndExit("init cache error: cache file %s already exists\n", NAME)
 	}
 
 	// TODO: think about what perform first fetch or file create.
 	if err := cache.Update(false); err != nil {
-		return fmt.Errorf("update error: %s", err)
+		printfErrAndExit("init cache error: %s\n", err)
 	}
 
-	file, err := os.Create(NAME)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	buf := bufio.NewWriter(file)
-
-	if err := cache.Dump(buf); err != nil {
-		return fmt.Errorf("save error: %s", err)
-	}
-	return nil
+	dumpCache(cache)
 }
 
 func loadCache(cache *xkcd.Cache) {
 	file, err := os.Open(NAME)
 	if err != nil {
-		log.Fatalln(err)
+		printfErrAndExit("load cache error: %s\n", err)
 	}
 	defer file.Close()
 
 	err = cache.Load(file)
 
 	if err == io.EOF {
-		log.Fatalln("comic cache is empty")
+		printfErrAndExit("load cache error: cache is empty\n")
 	}
 
 	if err != nil {
@@ -85,41 +79,38 @@ func loadCache(cache *xkcd.Cache) {
 func dumpCache(cache *xkcd.Cache) {
 	file, err := os.Create(NAME)
 	if err != nil {
-		log.Fatalln(err)
+		printfErrAndExit("file cache error: %s\n", err)
 	}
 	defer file.Close()
-
-	if err := cache.Dump(file); err != nil {
-		log.Fatalln(err)
+	buf := bufio.NewWriter(file)
+	if err := cache.Dump(buf); err != nil {
+		printfErrAndExit("save cache error: %s\n", err)
 	}
 }
 
-// TODO: fix formting issue
 func showCache(cache *xkcd.Cache, num int, showTranscript bool) {
 	if num > 0 {
 		val := cache.Comics[num]
 		if val == nil {
-			fmt.Printf("#%-4d NO SUCH COMIC IN CACHE\n", num)
-			return
+			printfErrAndExit("show cache error: no such comic %d\n", num)
 		}
 		printComics(map[int]*xkcd.Info{num: val}, showTranscript)
 	} else if num == 0 {
 		printComics(cache.Comics, showTranscript)
 	} else {
-		log.Fatalf("error: negative comic num  %d is not allowed\n", num)
+		printfErrAndExit("show cache error: invalid num %d\n", num)
 	}
 }
 
 func searchCache(cache *xkcd.Cache, ss []string, showTranscript bool) {
 	if len(ss) == 0 {
-		fmt.Println("empty search query")
-		return
+		printfErrAndExit("search cache error: empty query\n")
 	}
 	printComics(cache.Search(ss), showTranscript)
 }
 
 func statusCache(cache *xkcd.Cache) {
-	fmt.Printf("Last comic: %d, cached at: %d-%02d-%02d %02d:%02d\n",
+	fmt.Printf("last comic: %d, cached at: %d-%02d-%02d %02d:%02d\n",
 		cache.LastNum,
 		cache.CheckedAt.Year(),
 		cache.CheckedAt.Month(),
@@ -159,33 +150,31 @@ func main() {
 	case "search":
 		searchCmd.Parse(os.Args[2:])
 	default:
-		fmt.Println("init|sync|show|status|search subcommand is required")
-		os.Exit(1)
+		printfErrAndExit("init|sync|show|status|search subcommand is required\n")
 	}
 
 	cache := xkcd.NewCache()
 
 	if initCmd.Parsed() {
-		if err := initCache(cache, *initForcePtr); err != nil {
-			log.Fatalln(err)
-		}
+		initCache(cache, *initForcePtr)
 	}
 
+	loadCache(cache)
+
 	if syncCmd.Parsed() {
-		loadCache(cache)
 		cache.Update(*syncForcePtr)
 		dumpCache(cache)
 	}
+
 	if showCmd.Parsed() {
-		loadCache(cache)
 		showCache(cache, *showNumPtr, *showTransPtr)
 	}
+
 	if searchCmd.Parsed() {
-		loadCache(cache)
 		searchCache(cache, searchCmd.Args(), *searchTransPtr)
 	}
+
 	if statusCmd.Parsed() {
-		loadCache(cache)
 		statusCache(cache)
 	}
 
