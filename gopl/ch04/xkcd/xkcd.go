@@ -30,7 +30,7 @@ type Info struct {
 	URL        string
 }
 
-// FetchInfo gets xkcd comic information as json and unpack one to info struct.
+// FetchInfo gets xkcd comic information as json and unpack one to Info struct.
 func FetchInfo(url string) (*Info, error) {
 	resp, err := httpClient.Get(url)
 	if err != nil {
@@ -49,15 +49,15 @@ func FetchInfo(url string) (*Info, error) {
 	return &info, nil
 }
 
-// Cache represents cache of xkcd comic information.
+// Cache represents cache of xkcd comics information.
 type Cache struct {
 	CheckedAt time.Time
 	Comics    map[int]*Info
 	LastNum   int
 }
 
-// Update get the latest xkcd comic from site and compares with the latest from
-// the Cache. If new comics are appeared they well be added to Cache. Parameter
+// Update gets the latest xkcd comic from site and compares with the latest from
+// the Cache. If new comics are appeared they will be added to Cache. Parameter
 // 'force' allowes to reinitialize cache from the begginging.
 func (c *Cache) Update(force bool) error {
 
@@ -66,7 +66,6 @@ func (c *Cache) Update(force bool) error {
 		return fmt.Errorf("check last error: %s", err)
 	}
 
-	// TODO: think about moving update to function.
 	if force || c.Comics == nil {
 		// TODO: don't like this hack.
 		c.LastNum = 0
@@ -95,7 +94,7 @@ func (c *Cache) Update(force bool) error {
 	return nil
 }
 
-// Search searches required strings within cache and returns found comic infos.
+// Search searches required strings within Cache and returns found comic Infos.
 func (c *Cache) Search(arr []string) map[int]*Info {
 	results := make(map[int]*Info)
 	for k, v := range c.Comics {
