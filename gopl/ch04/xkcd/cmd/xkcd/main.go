@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"text/template"
 
@@ -50,7 +49,6 @@ func initCache(cache *xkcd.Cache, force bool) {
 		printfErrAndExit("init cache error: cache file %s already exists\n", NAME)
 	}
 
-	// TODO: think about what perform first fetch or file create.
 	if err := cache.Update(false); err != nil {
 		printfErrAndExit("init cache error: %s\n", err)
 	}
@@ -72,14 +70,14 @@ func loadCache(cache *xkcd.Cache) {
 	}
 
 	if err != nil {
-		log.Fatalln(err)
+		printfErrAndExit("load cache error: %s\n", err)
 	}
 }
 
 func dumpCache(cache *xkcd.Cache) {
 	file, err := os.Create(NAME)
 	if err != nil {
-		printfErrAndExit("file cache error: %s\n", err)
+		printfErrAndExit("save cache error: %s\n", err)
 	}
 	defer file.Close()
 	buf := bufio.NewWriter(file)
@@ -126,13 +124,13 @@ func main() {
 	statusCmd := flag.NewFlagSet("status", flag.ExitOnError)
 	searchCmd := flag.NewFlagSet("search", flag.ExitOnError)
 
-	initForcePtr := initCmd.Bool("force", false, "Force init with xkcd site.")
-	syncForcePtr := syncCmd.Bool("force", false, "Force sync with xkcd site.")
+	initForce := initCmd.Bool("force", false, "Force init with xkcd site.")
+	syncForce := syncCmd.Bool("force", false, "Force sync with xkcd site.")
 
-	showNumPtr := showCmd.Int("num", 0, "Number of comic to show.")
-	showTransPtr := showCmd.Bool("transcript", false, "Print info comic info with Transcript.")
+	showNum := showCmd.Int("num", 0, "Number of comic to show.")
+	showTrans := showCmd.Bool("transcript", false, "Print info comic info with Transcript.")
 
-	searchTransPtr := searchCmd.Bool("transcript", false, "Print info comic info with Transcript.")
+	searchTrans := searchCmd.Bool("transcript", false, "Print info comic info with Transcript.")
 
 	if len(os.Args) < 2 {
 		fmt.Println("init|sync|status|show|search subcommand is required")
@@ -156,22 +154,22 @@ func main() {
 	cache := xkcd.NewCache()
 
 	if initCmd.Parsed() {
-		initCache(cache, *initForcePtr)
+		initCache(cache, *initForce)
 	}
 
 	loadCache(cache)
 
 	if syncCmd.Parsed() {
-		cache.Update(*syncForcePtr)
+		cache.Update(*syncForce)
 		dumpCache(cache)
 	}
 
 	if showCmd.Parsed() {
-		showCache(cache, *showNumPtr, *showTransPtr)
+		showCache(cache, *showNum, *showTrans)
 	}
 
 	if searchCmd.Parsed() {
-		searchCache(cache, searchCmd.Args(), *searchTransPtr)
+		searchCache(cache, searchCmd.Args(), *searchTrans)
 	}
 
 	if statusCmd.Parsed() {
