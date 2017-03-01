@@ -7,12 +7,37 @@ import (
 	"io"
 	"log"
 	"os"
+	"text/template"
 
 	"github.com/krasoffski/goplts/gopl/ch04/xkcd"
 )
 
 // NAME is name of comic cache file.
 const NAME = "comic.cache"
+
+const templ = `{{ len .Comics }} comics
+{{- $withT := .WithT}}
+{{ range $key, $value := .Comics }}----------------------------------------
+Num: {{ $value.Num }}
+URL: {{ $value.URL }}
+Title: {{ $value.SafeTitle }}
+{{- if $withT }}
+Transcript: {{ $value.Transcript }}
+{{- end }}
+{{ end }}`
+
+var report = template.Must(template.New("comicslist").Parse(templ))
+
+func printComics(comics map[int]*xkcd.Info, showTranscript bool) {
+	err := report.Execute(os.Stdout, struct {
+		Comics map[int]*xkcd.Info
+		WithT  bool
+	}{comics, showTranscript})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func initCache(cache *xkcd.Cache, force bool) error {
 
@@ -70,31 +95,27 @@ func dumpCache(cache *xkcd.Cache) {
 }
 
 // TODO: fix formting issue
-func showCache(cache *xkcd.Cache, num int) {
+func showCache(cache *xkcd.Cache, num int, showTranscript bool) {
 	if num > 0 {
 		val := cache.Comics[num]
 		if val == nil {
 			fmt.Printf("#%-4d NO SUCH COMIC IN CACHE\n", num)
 			return
 		}
-		fmt.Printf("#%-4d %20.20s %.155s\n", num, val.URL, val.SafeTitle)
+		printComics(map[int]*xkcd.Info{num: val}, showTranscript)
 	} else if num == 0 {
-		for k, v := range cache.Comics {
-			fmt.Printf("#%5d %21.20s %.155s\n", k, v.URL, v.SafeTitle)
-		}
+		printComics(cache.Comics, showTranscript)
 	} else {
 		log.Fatalf("error: negative comic num  %d is not allowed\n", num)
 	}
 }
 
-func searchCache(cache *xkcd.Cache, s []string) {
-	if len(s) == 0 {
+func searchCache(cache *xkcd.Cache, ss []string, showTranscript bool) {
+	if len(ss) == 0 {
 		fmt.Println("empty search query")
 		return
 	}
-	for k, v := range cache.Search(s) {
-		fmt.Printf("#%5d %21.20s %.155s\n", k, v.URL, v.SafeTitle)
-	}
+	printComics(cache.Search(ss), showTranscript)
 }
 
 func statusCache(cache *xkcd.Cache) {
@@ -118,6 +139,9 @@ func main() {
 	syncForcePtr := syncCmd.Bool("force", false, "Force sync with xkcd site.")
 
 	showNumPtr := showCmd.Int("num", 0, "Number of comic to show.")
+	showTransPtr := showCmd.Bool("transcript", false, "Print info comic info with Transcript.")
+
+	searchTransPtr := searchCmd.Bool("transcript", false, "Print info comic info with Transcript.")
 
 	if len(os.Args) < 2 {
 		fmt.Println("init|sync|status|show|search subcommand is required")
@@ -154,11 +178,11 @@ func main() {
 	}
 	if showCmd.Parsed() {
 		loadCache(cache)
-		showCache(cache, *showNumPtr)
+		showCache(cache, *showNumPtr, *showTransPtr)
 	}
 	if searchCmd.Parsed() {
 		loadCache(cache)
-		searchCache(cache, searchCmd.Args())
+		searchCache(cache, searchCmd.Args(), *searchTransPtr)
 	}
 	if statusCmd.Parsed() {
 		loadCache(cache)
