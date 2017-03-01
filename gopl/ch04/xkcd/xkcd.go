@@ -39,7 +39,7 @@ func FetchInfo(url string) (*Info, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http status %d", resp.StatusCode)
+		return nil, fmt.Errorf("http status: %s", resp.Status)
 	}
 
 	var info Info
@@ -59,15 +59,16 @@ type Cache struct {
 // Update gets the latest xkcd comic from site and compares with the latest from
 // the Cache. If new comics are appeared they will be added to Cache. Parameter
 // 'force' allowes to reinitialize cache from the begginging.
-func (c *Cache) Update(force bool) error {
+func (c *Cache) Update(all bool) error {
 
 	newLast, err := FetchInfo(URL + "/" + INFO)
 	if err != nil {
 		return fmt.Errorf("check last error: %s", err)
 	}
 
-	if force || c.Comics == nil {
-		// TODO: don't like this hack.
+	if all {
+		// TODO: don't like this hack bellow.
+		// if all || c.Comics == nil {
 		c.LastNum = 0
 		c.Comics = make(map[int]*Info, newLast.Num)
 	}
@@ -78,19 +79,26 @@ func (c *Cache) Update(force bool) error {
 			continue
 		}
 
-		comicURL := fmt.Sprintf("%s/%d/", URL, i)
-		info, err := FetchInfo(comicURL + INFO)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "update error: %s, %s\n", comicURL, err)
+		if err := c.UpdateOne(i); err != nil {
+			fmt.Fprintln(os.Stderr, err)
 			continue
 		}
-
-		// No-thread safe
-		info.URL = comicURL
-		c.Comics[i] = info
 	}
 	c.CheckedAt = time.Now()
 	c.LastNum = newLast.Num
+	return nil
+}
+
+// UpdateOne updates comic Info in Cache with given comic num (id).
+func (c *Cache) UpdateOne(num int) error {
+	comicURL := fmt.Sprintf("%s/%d/", URL, num)
+	info, err := FetchInfo(comicURL + INFO)
+	if err != nil {
+		return fmt.Errorf("update one error: %s, %s", comicURL, err)
+	}
+	// No-thread safe
+	info.URL = comicURL
+	c.Comics[num] = info
 	return nil
 }
 

@@ -96,7 +96,7 @@ func showCache(cache *xkcd.Cache, num int, showTranscript bool) {
 	} else if num == 0 {
 		printComics(cache.Comics, showTranscript)
 	} else {
-		printfErrAndExit("show cache error: invalid num %d\n", num)
+		printfErrAndExit("show cache error: invalid comic num %d\n", num)
 	}
 }
 
@@ -105,6 +105,23 @@ func searchCache(cache *xkcd.Cache, ss []string, showTranscript bool) {
 		printfErrAndExit("search cache error: empty query\n")
 	}
 	printComics(cache.Search(ss), showTranscript)
+}
+
+func syncCache(cache *xkcd.Cache, num int, all bool) {
+	if all && num != 0 {
+		printfErrAndExit("sync cache error: num and all are not allowed togaher\n")
+	}
+	switch {
+	case num == 0:
+		cache.Update(all)
+	case num > 0:
+		if err := cache.UpdateOne(num); err != nil {
+			printfErrAndExit("%s\n", err)
+		}
+	case num < 0:
+		printfErrAndExit("sync cache error: invalid comic num %d\n", num)
+	}
+	dumpCache(cache)
 }
 
 func statusCache(cache *xkcd.Cache) {
@@ -125,7 +142,9 @@ func main() {
 	searchCmd := flag.NewFlagSet("search", flag.ExitOnError)
 
 	initForce := initCmd.Bool("force", false, "Force init with xkcd site.")
-	syncForce := syncCmd.Bool("force", false, "Force sync with xkcd site.")
+
+	syncNum := syncCmd.Int("num", 0, "Number of comic to sync.")
+	syncAll := syncCmd.Bool("all", false, "Sync all from the beginning.")
 
 	showNum := showCmd.Int("num", 0, "Number of comic to show.")
 	showTrans := showCmd.Bool("transcript", false, "Print comic info with Transcript.")
@@ -160,8 +179,7 @@ func main() {
 	loadCache(cache)
 
 	if syncCmd.Parsed() {
-		cache.Update(*syncForce)
-		dumpCache(cache)
+		syncCache(cache, *syncNum, *syncAll)
 	}
 
 	if showCmd.Parsed() {
