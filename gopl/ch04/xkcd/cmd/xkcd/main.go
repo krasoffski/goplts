@@ -128,14 +128,14 @@ func main() {
 	syncForce := syncCmd.Bool("force", false, "Force sync with xkcd site.")
 
 	showNum := showCmd.Int("num", 0, "Number of comic to show.")
-	showTrans := showCmd.Bool("transcript", false, "Print info comic info with Transcript.")
+	showTrans := showCmd.Bool("transcript", false, "Print comic info with Transcript.")
 
-	searchTrans := searchCmd.Bool("transcript", false, "Print info comic info with Transcript.")
+	searchTrans := searchCmd.Bool("transcript", false, "Print comic info with Transcript.")
 
 	if len(os.Args) < 2 {
-		fmt.Println("init|sync|status|show|search subcommand is required")
-		os.Exit(1)
+		printfErrAndExit("init|sync|show|status|search subcommand is required\n")
 	}
+
 	switch os.Args[1] {
 	case "init":
 		initCmd.Parse(os.Args[2:])
@@ -175,5 +175,4 @@ func main() {
 	if statusCmd.Parsed() {
 		statusCache(cache)
 	}
-
 }
