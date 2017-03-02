@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"golang.org/x/net/html"
 )
@@ -11,6 +12,7 @@ import (
 func main() {
 	noLinks := flag.Bool("nolinks", false, "Do not print links.")
 	noCount := flag.Bool("nocount", false, "Do not print element count.")
+	noText := flag.Bool("notext", false, "Do not print text of nodes.")
 	flag.Parse()
 
 	doc, err := html.Parse(os.Stdin)
@@ -29,6 +31,11 @@ func main() {
 		countElements(m, doc)
 		for k, v := range m {
 			fmt.Printf("%-10s: % 4d\n", k, v)
+		}
+	}
+	if !*noText {
+		for _, text := range collectText(nil, doc) {
+			fmt.Println(text)
 		}
 	}
 }
@@ -56,4 +63,27 @@ func countElements(m map[string]int, n *html.Node) {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		countElements(m, c)
 	}
+}
+
+func collectText(txt []string, n *html.Node) []string {
+	if n == nil {
+		return txt
+	}
+
+	if n.Type == html.TextNode {
+		if n.Parent.Data != "script" && n.Parent.Data != "style" {
+			for _, line := range strings.Split(n.Data, "\n") {
+				line = strings.TrimLeft(line, " \t")
+				if len(line) == 0 {
+					continue
+				}
+				txt = append(txt, line)
+			}
+		}
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		txt = collectText(txt, c)
+	}
+	return txt
 }
