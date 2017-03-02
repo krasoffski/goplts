@@ -63,14 +63,14 @@ func fetch() {
 	}
 
 	for _, url := range urls {
-		fetchURL(os.Stdin, url, body, code)
+		fetchURL(os.Stdout, url, body, code)
 	}
 }
 
 func init() {
 	flag.Var(&urls, "url", "url to fetch, multiple allowed")
-	flag.BoolVar(&body, "body", false, "print response body")
-	flag.BoolVar(&code, "code", true, "print response status code for url")
+	flag.BoolVar(&body, "body", true, "print response body")
+	flag.BoolVar(&code, "code", false, "print response status code for url")
 }
 
 func main() {
