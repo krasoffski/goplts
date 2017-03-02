@@ -20,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 	if !*noLinks {
-		for _, link := range visit(nil, doc) {
+		for _, link := range collectLinks(nil, doc) {
 			fmt.Println(link)
 		}
 	}
@@ -33,7 +33,7 @@ func main() {
 	}
 }
 
-func visit(links []string, n *html.Node) []string {
+func collectLinks(links []string, n *html.Node) []string {
 	if n == nil {
 		return links
 	}
@@ -45,8 +45,8 @@ func visit(links []string, n *html.Node) []string {
 			}
 		}
 	}
-	links = visit(links, n.FirstChild)
-	return visit(links, n.NextSibling)
+	links = collectLinks(links, n.FirstChild)
+	return collectLinks(links, n.NextSibling)
 }
 
 func countElements(m map[string]int, n *html.Node) {
