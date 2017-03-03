@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 const httpPrefix = "http://"
@@ -15,6 +16,7 @@ var (
 	urls strslice
 	body bool
 	code bool
+	tout time.Duration
 )
 
 type strslice []string
@@ -33,8 +35,8 @@ func fetchURL(w io.Writer, url string, body bool, code bool) error {
 	if !strings.HasPrefix(url, httpPrefix) {
 		url = httpPrefix + url
 	}
-
-	resp, err := http.Get(url)
+	httpClient := http.Client{Timeout: tout}
+	resp, err := httpClient.Get(url)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error getting '%s': %v\n", url, err)
@@ -71,6 +73,7 @@ func init() {
 	flag.Var(&urls, "url", "url to fetch, multiple allowed")
 	flag.BoolVar(&body, "body", true, "print response body")
 	flag.BoolVar(&code, "code", false, "print response status code for url")
+	flag.DurationVar(&tout, "tout", time.Duration(time.Second*10), "Request timeout.")
 }
 
 func main() {
