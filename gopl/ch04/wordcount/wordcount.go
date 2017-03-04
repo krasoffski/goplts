@@ -11,18 +11,26 @@ import (
 type Dict map[string]int
 
 // Tell counts number of words.
-func Tell(reader io.Reader) (Dict, error) {
+func Tell(r io.Reader) (Dict, error) {
 	counts := make(Dict)
-	input := bufio.NewScanner(reader)
+	if err := Update(r, counts); err != nil {
+		return nil, err
+	}
+	return counts, nil
+}
+
+// Update updates given Dict with new or exitring word and increment word count.
+func Update(r io.Reader, d Dict) error {
+	input := bufio.NewScanner(r)
 	input.Split(bufio.ScanWords)
 	for input.Scan() {
 		text := strings.Trim(input.Text(), `:"',.“”!?;-‘’(*)`)
-		counts[strings.ToLower(text)]++
+		d[strings.ToLower(text)]++
 	}
 	if input.Err() != nil {
-		return nil, input.Err()
+		return input.Err()
 	}
-	return counts, nil
+	return nil
 }
 
 // KeyVal represents Key-Value pair.
@@ -31,13 +39,14 @@ type KeyVal struct {
 	Val int
 }
 
-// Pairs represents slice of Key-Value pairs.
+// Pairs represents slice of Key-Val pairs.
 type Pairs []KeyVal
 
 func (k Pairs) Len() int           { return len(k) }
 func (k Pairs) Less(i, j int) bool { return k[i].Val < k[j].Val }
 func (k Pairs) Swap(i, j int)      { k[i], k[j] = k[j], k[i] }
 
+// Sort sorts given Dict by word popularity and return slice of Key-Val pairs.
 func Sort(ws Dict) Pairs {
 	pairs := make(Pairs, len(ws))
 	i := 0
