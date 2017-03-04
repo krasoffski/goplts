@@ -6,17 +6,19 @@ import (
 	"os"
 	"strings"
 
+	"github.com/krasoffski/goplts/gopl/ch04/wordcount"
 	"golang.org/x/net/html"
 )
 
 func main() {
 	noLinks := flag.Bool("nolinks", false, "Do not print links.")
 	noCount := flag.Bool("nocount", false, "Do not print element count.")
+	noWords := flag.Bool("nowords", false, "Do not print number of words.")
 	noText := flag.Bool("notext", false, "Do not print text of nodes.")
 	noICS := flag.Bool("noics", false, "Do not print imgs, css, scripts of nodes.")
 	flag.Parse()
 
-	if *noICS && *noText && *noLinks && *noCount {
+	if *noICS && *noText && *noLinks && *noCount && *noWords {
 		fmt.Fprintln(os.Stderr, "nothing to do, exiting...")
 		os.Exit(1)
 	}
@@ -49,6 +51,16 @@ func main() {
 			fmt.Println(text)
 		}
 	}
+	if !*noWords {
+		m := make(map[string]int)
+		total := 0
+		countWords(m, doc)
+		for k, v := range m {
+			total += v
+			fmt.Printf("%-10s: % 4d\n", k, v)
+		}
+		fmt.Printf("Total words: %d\n", total)
+	}
 }
 
 func getAttrVal(n *html.Node, attr string) (string, bool) {
@@ -58,6 +70,18 @@ func getAttrVal(n *html.Node, attr string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func countWords(m wordcount.Dict, n *html.Node) {
+	if n.Type == html.TextNode {
+		if n.Parent.Data != "script" && n.Parent.Data != "style" {
+			wordcount.Update(strings.NewReader(n.Data), m)
+		}
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		countWords(m, c)
+	}
 }
 
 func collectICS(links []string, n *html.Node) []string {
