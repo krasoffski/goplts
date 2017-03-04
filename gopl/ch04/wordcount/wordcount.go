@@ -1,19 +1,18 @@
-package main
+package wordcount
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 )
 
-// WordStat represents word frequency count
-type WordStat map[string]int
+// Dict represents word frequency count
+type Dict map[string]int
 
-func wordcount(reader io.Reader) (WordStat, error) {
-	counts := make(WordStat)
+// Tell counts number of words.
+func Tell(reader io.Reader) (Dict, error) {
+	counts := make(Dict)
 	input := bufio.NewScanner(reader)
 	input.Split(bufio.ScanWords)
 	for input.Scan() {
@@ -28,36 +27,24 @@ func wordcount(reader io.Reader) (WordStat, error) {
 
 // KeyVal represents Key-Value pair.
 type KeyVal struct {
-	key   string
-	value int
+	Key string
+	Val int
 }
 
-// KeysValues represents slice of Key-Value pairs.
-type KeysValues []KeyVal
+// Pairs represents slice of Key-Value pairs.
+type Pairs []KeyVal
 
-func (k KeysValues) Len() int           { return len(k) }
-func (k KeysValues) Less(i, j int) bool { return k[i].value < k[j].value }
-func (k KeysValues) Swap(i, j int)      { k[i], k[j] = k[j], k[i] }
+func (k Pairs) Len() int           { return len(k) }
+func (k Pairs) Less(i, j int) bool { return k[i].Val < k[j].Val }
+func (k Pairs) Swap(i, j int)      { k[i], k[j] = k[j], k[i] }
 
-func statSort(ws WordStat) KeysValues {
-	kvs := make(KeysValues, len(ws))
+func Sort(ws Dict) Pairs {
+	pairs := make(Pairs, len(ws))
 	i := 0
 	for k, v := range ws {
-		kvs[i] = KeyVal{k, v}
+		pairs[i] = KeyVal{k, v}
 		i++
 	}
-	sort.Sort(sort.Reverse(kvs))
-	return kvs
-}
-
-func main() {
-	counts, err := wordcount(os.Stdin)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "wordcount: %s", err)
-		os.Exit(1)
-	}
-
-	for _, s := range statSort(counts) {
-		fmt.Printf("%20s\t%d\n", s.key, s.value)
-	}
+	sort.Sort(sort.Reverse(pairs))
+	return pairs
 }
