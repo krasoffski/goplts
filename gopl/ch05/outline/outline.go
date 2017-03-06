@@ -64,6 +64,6 @@ func startElement(n *html.Node) {
 func endElement(n *html.Node) {
 	if n.Type == html.ElementNode {
 		fmt.Printf("%*s<%s>\n", depth, "", n.Data)
-		depth++
+		depth--
 	}
 }
