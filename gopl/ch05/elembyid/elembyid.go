@@ -1,22 +1,33 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"strings"
 
 	"golang.org/x/net/html"
 )
 
 func init() {
 	log.SetFlags(0)
-	log.SetPrefix("outline: ")
+	log.SetPrefix("elembyid: ")
 }
 
 func main() {
+	url := flag.String("url", "", "URL for lookup.")
+	id := flag.String("id", "", "Element id for lookup")
+	flag.Parse()
 
-	resp, err := http.Get(os.Args[2])
+	if *url == "" {
+		log.Fatalln("please specify url")
+	}
+	if *id == "" {
+		log.Fatalln("please specify element id")
+	}
+
+	resp, err := http.Get(*url)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -27,14 +38,19 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if n := elementByID(doc, os.Args[1]); n != nil {
-		for _, a := range n.Attr {
-			fmt.Printf("%s, %s='%s'\n", n.Data, a.Key, a.Val)
-		}
+	if n := elementByID(doc, *id); n != nil {
+		fmt.Printf("<%s %s>\n", n.Data, joinAttrs(n.Attr))
 	} else {
-		fmt.Printf("no element with id: '%s'\n", os.Args[1])
+		fmt.Printf("no element with id: '%s'\n", *id)
 	}
+}
 
+func joinAttrs(attrs []html.Attribute) string {
+	asHTML := make([]string, 0, len(attrs))
+	for _, a := range attrs {
+		asHTML = append(asHTML, fmt.Sprintf("%s=\"%s\"", a.Key, a.Val))
+	}
+	return strings.Join(asHTML, " ")
 }
 
 func checkID(n *html.Node, id string) bool {
@@ -66,7 +82,6 @@ func elementByID(n *html.Node, id string) *html.Node {
 		if res := elementByID(c, id); res != nil {
 			return res
 		}
-
 	}
 
 	if endElement(n, id) {
