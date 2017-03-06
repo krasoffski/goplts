@@ -49,6 +49,14 @@ func checkID(n *html.Node, id string) bool {
 	return false
 }
 
+func startElement(n *html.Node, id string) bool {
+	return checkID(n, id)
+}
+
+func endElement(n *html.Node, id string) bool {
+	return checkID(n, id)
+}
+
 func elementByID(n *html.Node, id string) *html.Node {
 	if startElement(n, id) {
 		return n
@@ -64,13 +72,6 @@ func elementByID(n *html.Node, id string) *html.Node {
 	if endElement(n, id) {
 		return n
 	}
+
 	return nil
-}
-
-func startElement(n *html.Node, id string) bool {
-	return checkID(n, id)
-}
-
-func endElement(n *html.Node, id string) bool {
-	return checkID(n, id)
 }
