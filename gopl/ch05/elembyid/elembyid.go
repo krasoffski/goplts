@@ -41,7 +41,7 @@ func main() {
 	if n := elementByID(doc, *id); n != nil {
 		fmt.Printf("<%s %s>\n", n.Data, joinAttrs(n.Attr))
 	} else {
-		fmt.Printf("no element with id: '%s'\n", *id)
+		log.Fatalf("no element with id: '%s'", *id)
 	}
 }
 
