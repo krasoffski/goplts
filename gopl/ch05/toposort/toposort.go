@@ -6,8 +6,9 @@ type empty struct{}
 
 // Note: struct{} instead of int
 var prereqs = map[string]map[string]empty{
-	"algorithms": {"data structures": empty{}},
-	"calculus":   {"linear algebra": empty{}},
+	"algorithms":     {"data structures": empty{}},
+	"calculus":       {"linear algebra": empty{}},
+	"linear algebra": {"calculus": empty{}},
 
 	"compilers": {
 		"data structures":       empty{},
@@ -30,6 +31,12 @@ var prereqs = map[string]map[string]empty{
 	},
 }
 
+const (
+	white = iota
+	gray
+	black
+)
+
 func main() {
 	for i, course := range topoSort(prereqs) {
 		fmt.Printf("%d:\t%s\n", i+1, course)
@@ -38,15 +45,19 @@ func main() {
 
 func topoSort(m map[string]map[string]empty) []string {
 	var order []string
-	seen := make(map[string]bool)
+	seen := make(map[string]int)
 
 	var visitAll func(map[string]empty)
 	visitAll = func(items map[string]empty) {
 		for item := range items {
-			if !seen[item] {
-				seen[item] = true
+			if seen[item] == white {
+				seen[item] = gray
 				visitAll(m[item])
 				order = append(order, item)
+				seen[item] = black
+			}
+			if seen[item] == gray {
+				panic("cycled graph")
 			}
 		}
 	}
@@ -57,5 +68,6 @@ func topoSort(m map[string]map[string]empty) []string {
 
 	// sort.Strings(keys)
 	visitAll(keys)
+	fmt.Println(seen)
 	return order
 }
