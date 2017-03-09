@@ -9,9 +9,9 @@ type empty struct{}
 
 // Note: struct{} instead of int
 var prereqs = map[string]map[string]empty{
-	"algorithms":     {"data structures": empty{}},
-	"calculus":       {"linear algebra": empty{}},
-	"linear algebra": {"calculus": empty{}},
+	"algorithms": {"data structures": empty{}},
+	"calculus":   {"linear algebra": empty{}},
+	// "linear algebra": {"calculus": empty{}},
 
 	"compilers": {
 		"data structures":       empty{},
@@ -40,6 +40,10 @@ const (
 	black
 )
 
+func init() {
+	log.SetFlags(0)
+}
+
 func main() {
 	courses, err := topoSort(prereqs)
 	if err != nil {
@@ -55,11 +59,13 @@ func topoSort(m map[string]map[string]empty) ([]string, error) {
 	seen := make(map[string]int)
 
 	var visitAll func(map[string]empty) error
+	var prev string
 
 	visitAll = func(items map[string]empty) error {
 		for item := range items {
 			if seen[item] == white {
 				seen[item] = gray
+				prev = item // NOTE: ugly hack
 				if err := visitAll(m[item]); err != nil {
 					return err
 				}
@@ -67,8 +73,7 @@ func topoSort(m map[string]map[string]empty) ([]string, error) {
 				order = append(order, item)
 			}
 			if seen[item] == gray {
-				// panic("cycled graph")
-				return fmt.Errorf("%s", "cycled graph")
+				return fmt.Errorf("cyclic dependency: '%s' and '%s'", item, prev)
 			}
 		}
 		return nil
