@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type empty struct{}
 
@@ -38,28 +41,37 @@ const (
 )
 
 func main() {
-	for i, course := range topoSort(prereqs) {
+	courses, err := topoSort(prereqs)
+	if err != nil {
+		log.Fatal("cyclic dependency detected ")
+	}
+	for i, course := range courses {
 		fmt.Printf("%d:\t%s\n", i+1, course)
 	}
 }
 
-func topoSort(m map[string]map[string]empty) []string {
+func topoSort(m map[string]map[string]empty) ([]string, error) {
 	var order []string
 	seen := make(map[string]int)
 
-	var visitAll func(map[string]empty)
-	visitAll = func(items map[string]empty) {
+	var visitAll func(map[string]empty) error
+
+	visitAll = func(items map[string]empty) error {
 		for item := range items {
 			if seen[item] == white {
 				seen[item] = gray
-				visitAll(m[item])
+				if err := visitAll(m[item]); err != nil {
+					return err
+				}
 				order = append(order, item)
 				seen[item] = black
 			}
 			if seen[item] == gray {
-				panic("cycled graph")
+				// panic("cycled graph")
+				return fmt.Errorf("%s", "cycled graph")
 			}
 		}
+		return nil
 	}
 	keys := make(map[string]empty, len(m))
 	for key := range m {
@@ -67,7 +79,9 @@ func topoSort(m map[string]map[string]empty) []string {
 	}
 
 	// sort.Strings(keys)
-	visitAll(keys)
-	fmt.Println(seen)
-	return order
+	if err := visitAll(keys); err != nil {
+		return nil, err
+	}
+
+	return order, nil
 }
