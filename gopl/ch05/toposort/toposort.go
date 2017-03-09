@@ -43,7 +43,7 @@ const (
 func main() {
 	courses, err := topoSort(prereqs)
 	if err != nil {
-		log.Fatal("cyclic dependency detected ")
+		log.Fatalf("error: %v", err)
 	}
 	for i, course := range courses {
 		fmt.Printf("%d:\t%s\n", i+1, course)
@@ -63,8 +63,8 @@ func topoSort(m map[string]map[string]empty) ([]string, error) {
 				if err := visitAll(m[item]); err != nil {
 					return err
 				}
-				order = append(order, item)
 				seen[item] = black
+				order = append(order, item)
 			}
 			if seen[item] == gray {
 				// panic("cycled graph")
