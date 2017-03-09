@@ -1,27 +1,33 @@
 package main
 
-import (
-	"fmt"
-	"sort"
-)
+import "fmt"
 
-var prereqs = map[string][]string{
-	"algorithms": {"data structures"},
-	"calculus":   {"linear algebra"},
+type empty struct{}
+
+// Note: struct{} instead of int
+var prereqs = map[string]map[string]empty{
+	"algorithms": {"data structures": empty{}},
+	"calculus":   {"linear algebra": empty{}},
 
 	"compilers": {
-		"data structures",
-		"formal languages",
-		"computer organization",
+		"data structures":       empty{},
+		"formal languages":      empty{},
+		"computer organization": empty{},
 	},
 
-	"data structures":       {"discrete math"},
-	"databases":             {"data structures"},
-	"discrete math":         {"intro to programming"},
-	"formal languages":      {"discrete math"},
-	"networks":              {"operating systems"},
-	"operating systems":     {"data structures", "computer organization"},
-	"programming languages": {"data structures", "computer organization"},
+	"data structures":  {"discrete math": empty{}},
+	"databases":        {"data structures": empty{}},
+	"discrete math":    {"intro to programming": empty{}},
+	"formal languages": {"discrete math": empty{}},
+	"networks":         {"operating systems": empty{}},
+	"operating systems": {
+		"data structures":       empty{},
+		"computer organization": empty{},
+	},
+	"programming languages": {
+		"data structures":       empty{},
+		"computer organization": empty{},
+	},
 }
 
 func main() {
@@ -30,13 +36,13 @@ func main() {
 	}
 }
 
-func topoSort(m map[string][]string) []string {
+func topoSort(m map[string]map[string]empty) []string {
 	var order []string
 	seen := make(map[string]bool)
 
-	var visitAll func([]string)
-	visitAll = func(items []string) {
-		for _, item := range items {
+	var visitAll func(map[string]empty)
+	visitAll = func(items map[string]empty) {
+		for item := range items {
 			if !seen[item] {
 				seen[item] = true
 				visitAll(m[item])
@@ -44,12 +50,12 @@ func topoSort(m map[string][]string) []string {
 			}
 		}
 	}
-	keys := make([]string, 0, len(m))
+	keys := make(map[string]empty, len(m))
 	for key := range m {
-		keys = append(keys, key)
+		keys[key] = empty{}
 	}
 
-	sort.Strings(keys)
+	// sort.Strings(keys)
 	visitAll(keys)
 	return order
 }
