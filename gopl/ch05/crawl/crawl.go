@@ -6,7 +6,10 @@ import (
 	"os"
 )
 
+var startURLs []string
+
 func breadFirst(f func(string) []string, worklist []string) {
+	copy(startURLs, worklist)
 	seen := make(map[string]bool)
 	for len(worklist) > 0 {
 		items := worklist
@@ -14,6 +17,9 @@ func breadFirst(f func(string) []string, worklist []string) {
 		for _, item := range items {
 			if !seen[item] {
 				seen[item] = true
+				if len(seen) > 10 {
+					return
+				}
 				worklist = append(worklist, f(item)...)
 			}
 		}
