@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"golang.org/x/net/html"
 )
@@ -28,6 +29,9 @@ func Extract(url string) ([]string, error) {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			for _, a := range n.Attr {
 				if a.Key != "href" {
+					continue
+				}
+				if strings.HasPrefix(a.Val, "javascript:") {
 					continue
 				}
 				link, err := resp.Request.URL.Parse(a.Val)
