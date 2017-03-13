@@ -30,10 +30,9 @@ func breadFirst(f func(string) []string, worklist []string) {
 		for _, item := range items {
 			if !seen[item] {
 				seen[item] = true
-				if len(seen) > 20 {
-					// fmt.Println(seen)
-					return
-				}
+				// if len(seen) > 20 {
+				// 	return
+				// }
 				worklist = append(worklist, f(item)...)
 			}
 		}
