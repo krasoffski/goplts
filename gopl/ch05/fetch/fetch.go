@@ -28,11 +28,14 @@ func fetch(url string) (filename string, n int64, err error) {
 	if err != nil {
 		return "", 0, err
 	}
+	// NOTE: not sure this is correct
+	defer func() {
+		// Close file, but prefer error from Copy, if any.
+		if closeErr := f.Close(); err == nil {
+			err = closeErr
+		}
+	}()
 	n, err = io.Copy(f, resp.Body)
-	// Close file, but prefer error from Copy, if any.
-	if closeErr := f.Close(); err == nil {
-		err = closeErr
-	}
 	return local, n, err
 }
 
