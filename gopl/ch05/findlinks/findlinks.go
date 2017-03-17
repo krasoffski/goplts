@@ -11,15 +11,12 @@ import (
 )
 
 func main() {
-	noLinks := flag.Bool("nolinks", false, "Do not print links.")
-	noCount := flag.Bool("nocount", false, "Do not print element count.")
-	noWords := flag.Bool("nowords", false, "Do not print number of words.")
-	noText := flag.Bool("notext", false, "Do not print text of nodes.")
-	noICS := flag.Bool("noics", false, "Do not print imgs, css, scripts of nodes.")
+	action := flag.String("action", "links",
+		"Action to perform: links|count|words|text|ics")
 	flag.Parse()
 
-	if *noICS && *noText && *noLinks && *noCount && *noWords {
-		fmt.Fprintln(os.Stderr, "nothing to do, exiting...")
+	if *action == "" {
+		fmt.Fprintln(os.Stderr, "choose from: links|count|words|text|ics")
 		os.Exit(1)
 	}
 
@@ -29,29 +26,19 @@ func main() {
 		fmt.Fprintf(os.Stderr, "findlinks: %v\n", err)
 		os.Exit(1)
 	}
-	if !*noLinks {
+
+	switch *action {
+	case "links":
 		for _, link := range collectLinks(nil, doc) {
 			fmt.Println(link)
 		}
-	}
-	if !*noICS {
-		for _, link := range collectICS(nil, doc) {
-			fmt.Println(link)
-		}
-	}
-	if !*noCount {
+	case "count":
 		m := make(map[string]int)
 		countElements(m, doc)
 		for k, v := range m {
 			fmt.Printf("%-10s: % 4d\n", k, v)
 		}
-	}
-	if !*noText {
-		for _, text := range collectText(nil, doc) {
-			fmt.Println(text)
-		}
-	}
-	if !*noWords {
+	case "words":
 		m := make(map[string]int)
 		total := 0
 		countWords(m, doc)
@@ -60,6 +47,17 @@ func main() {
 			fmt.Printf("%-10s: % 4d\n", k, v)
 		}
 		fmt.Printf("Total words: %d\n", total)
+	case "text":
+		for _, text := range collectText(nil, doc) {
+			fmt.Println(text)
+		}
+	case "ics":
+		for _, link := range collectICS(nil, doc) {
+			fmt.Println(link)
+		}
+	default:
+		fmt.Fprintln(os.Stderr, "choose from: links|count|words|text|ics")
+		os.Exit(1)
 	}
 }
 
