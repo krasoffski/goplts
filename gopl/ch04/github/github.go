@@ -5,7 +5,7 @@ import "time"
 // IssueURL is GitHub API URL for searching issues.
 const IssueURL = "https://api.github.com/search/issues"
 
-// IssuesSearchResult is slice of GitHub issues returned by responce.
+// IssuesSearchResult is slice of GitHub issues returned by response.
 type IssuesSearchResult struct {
 	TotalCount int `json:"total_count"`
 	Items      []*Issue
