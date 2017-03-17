@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Extract extracts all links on the given url.
 func Extract(url string) ([]string, error) {
 	resp, err := http.Get(url)
 	if err != nil {

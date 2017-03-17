@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
+// URL is xkcd root URL.
 const URL = "http://xkcd.com"
+
+// INFO is xkcd API suffix for comic.
 const INFO = "info.0.json"
 
 var httpClient = http.Client{Timeout: time.Duration(time.Second * 10)}

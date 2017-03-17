@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// SearchIssues searches issues on GitHub according to provided terms.
 func SearchIssues(terms []string) (*IssuesSearchResult, error) {
 	q := url.QueryEscape(strings.Join(terms, " "))
 	resp, err := http.Get(IssueURL + "?q=" + q)
