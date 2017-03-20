@@ -41,13 +41,9 @@ func (s *IntSet) UnionWith(t *IntSet) {
 func (s *IntSet) Len() int {
 	var num int
 	for _, word := range s.words {
-		if word == 0 {
-			continue
-		}
-		for j := 0; j < 64; j++ {
-			if word&(1<<uint(j)) != 0 {
-				num++
-			}
+		for word != 0 {
+			word = word & (word - 1)
+			num++
 		}
 	}
 	return num
