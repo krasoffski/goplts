@@ -55,6 +55,7 @@ func (s *IntSet) Len() int {
 
 // Clean removes all value from the set.
 func (s *IntSet) Clean() {
+	// s.words = make(IntSet, 0)
 	s.words = nil
 }
 
