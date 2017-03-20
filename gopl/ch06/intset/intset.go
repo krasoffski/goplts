@@ -37,6 +37,22 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	}
 }
 
+// Len returns the number of value in the set.
+func (s *IntSet) Len() int {
+	var num int
+	for _, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for j := 0; j < 64; j++ {
+			if word&(1<<uint(j)) != 0 {
+				num++
+			}
+		}
+	}
+	return num
+}
+
 // String returns the set as a string of the form "{1 2 3}".
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
