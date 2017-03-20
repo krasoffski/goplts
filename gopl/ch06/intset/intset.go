@@ -53,6 +53,19 @@ func (s *IntSet) Len() int {
 	return num
 }
 
+// Clean removes all value from the set.
+func (s *IntSet) Clean() {
+	s.words = nil
+}
+
+// Copy returns a new copy of the set.
+func (s *IntSet) Copy() *IntSet {
+	newSet := new(IntSet)
+	newSet.words = make([]uint64, len(s.words))
+	copy(newSet.words, s.words)
+	return newSet
+}
+
 // String returns the set as a string of the form "{1 2 3}".
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
