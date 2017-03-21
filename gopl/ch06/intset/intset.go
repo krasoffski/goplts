@@ -74,6 +74,13 @@ func (s *IntSet) Copy() *IntSet {
 	return newSet
 }
 
+// AddAll adds a given values to the set.
+func (s *IntSet) AddAll(values ...int) {
+	for _, v := range values {
+		s.Add(v)
+	}
+}
+
 // String returns the set as a string of the form "{1 2 3}".
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
