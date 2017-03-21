@@ -49,6 +49,17 @@ func (s *IntSet) Len() int {
 	return num
 }
 
+// Remove removes value from the set.
+func (s *IntSet) Remove(x int) {
+	// if !s.Has(x) {
+	// 	return
+	// }
+	word, bit := x/64, uint(x%64)
+	if word < len(s.words) {
+		s.words[word] &= ^(1 << bit)
+	}
+}
+
 // Clean removes all value from the set.
 func (s *IntSet) Clean() {
 	// s.words = make(IntSet, 0)
