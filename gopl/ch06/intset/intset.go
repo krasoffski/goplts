@@ -81,22 +81,31 @@ func (s *IntSet) AddAll(values ...int) {
 	}
 }
 
-// String returns the set as a string of the form "{1 2 3}".
-func (s *IntSet) String() string {
-	var buf bytes.Buffer
-	buf.WriteByte('{')
+// Elems returns slice of values of the set.
+func (s *IntSet) Elems() []int {
+	elements := make([]int, 0, s.Len())
 	for i, word := range s.words {
 		if word == 0 {
 			continue
 		}
 		for j := 0; j < 64; j++ {
 			if word&(1<<uint(j)) != 0 {
-				if buf.Len() > len("}") {
-					buf.WriteByte(' ')
-				}
-				fmt.Fprintf(&buf, "%d", 64*i+j)
+				elements = append(elements, 64*i+j)
 			}
 		}
+	}
+	return elements
+}
+
+// String returns the set as a string of the form "{1 2 3}".
+func (s *IntSet) String() string {
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for _, e := range s.Elems() {
+		if buf.Len() > len("}") {
+			buf.WriteByte(' ')
+		}
+		fmt.Fprintf(&buf, "%d", e)
 	}
 	buf.WriteByte('}')
 	return buf.String()
