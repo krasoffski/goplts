@@ -8,6 +8,11 @@ import (
 // UINTSIZE represents size of uint.
 const UINTSIZE = 32 << (^uint(0) >> 63)
 
+// divmodUint returns quotient and remainder where divisor is uint size.
+func divmodUint(x int) (int, uint) {
+	return x / UINTSIZE, uint(x % UINTSIZE)
+}
+
 // An IntSet is a set of small non-negative integers.
 // Its zero value represents the empty set.
 type IntSet struct {
@@ -16,13 +21,13 @@ type IntSet struct {
 
 // Has reports whether the set contains the non-negative value x.
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/UINTSIZE, uint(x%UINTSIZE)
+	word, bit := divmodUint(x)
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
-	word, bit := x/UINTSIZE, uint(x%UINTSIZE)
+	word, bit := divmodUint(x)
 	for word >= len(s.words) {
 		s.words = append(s.words, 0)
 	}
@@ -57,7 +62,7 @@ func (s *IntSet) Remove(x int) {
 	// if !s.Has(x) {
 	// 	return
 	// }
-	word, bit := x/UINTSIZE, uint(x%UINTSIZE)
+	word, bit := divmodUint(x)
 	if word < len(s.words) {
 		s.words[word] &= ^(1 << bit)
 	}
