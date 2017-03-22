@@ -5,21 +5,24 @@ import (
 	"fmt"
 )
 
+// UINTSIZE represents size of uint.
+const UINTSIZE = 32 << (^uint(0) >> 63)
+
 // An IntSet is a set of small non-negative integers.
 // Its zero value represents the empty set.
 type IntSet struct {
-	words []uint64
+	words []uint
 }
 
 // Has reports whether the set contains the non-negative value x.
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/UINTSIZE, uint(x%UINTSIZE)
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/UINTSIZE, uint(x%UINTSIZE)
 	for word >= len(s.words) {
 		s.words = append(s.words, 0)
 	}
@@ -54,7 +57,7 @@ func (s *IntSet) Remove(x int) {
 	// if !s.Has(x) {
 	// 	return
 	// }
-	word, bit := x/64, uint(x%64)
+	word, bit := x/UINTSIZE, uint(x%UINTSIZE)
 	if word < len(s.words) {
 		s.words[word] &= ^(1 << bit)
 	}
@@ -69,7 +72,7 @@ func (s *IntSet) Clean() {
 // Copy returns a new copy of the set.
 func (s *IntSet) Copy() *IntSet {
 	newSet := new(IntSet)
-	newSet.words = make([]uint64, len(s.words))
+	newSet.words = make([]uint, len(s.words))
 	copy(newSet.words, s.words)
 	return newSet
 }
@@ -88,9 +91,9 @@ func (s *IntSet) Elems() []int {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < UINTSIZE; j++ {
 			if word&(1<<uint(j)) != 0 {
-				elements = append(elements, 64*i+j)
+				elements = append(elements, UINTSIZE*i+j)
 			}
 		}
 	}
