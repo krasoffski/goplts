@@ -34,11 +34,42 @@ func (s *IntSet) Add(x int) {
 	s.words[word] |= 1 << bit
 }
 
-// UnionWith sets s to the union of s and t.
+// UnionWith sets s with elements from both s and t
 func (s *IntSet) UnionWith(t *IntSet) {
 	for i, tword := range t.words {
 		if i < len(s.words) {
 			s.words[i] |= tword
+		} else {
+			s.words = append(s.words, tword)
+		}
+	}
+}
+
+// IntersectWith sets s with elements common to s and t
+func (s *IntSet) IntersectWith(t *IntSet) {
+	var newSet = make([]uint, len(s.words))
+	for i, tword := range t.words {
+		if i < len(newSet) {
+			newSet[i] = s.words[i] & tword
+		}
+	}
+	s.words = newSet
+}
+
+// DifferenceWith sets s with elements in s but not in t.
+func (s *IntSet) DifferenceWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			s.words[i] &= ^tword
+		}
+	}
+}
+
+// SymmetricDifference sets s with elements in either s or t but not both.
+func (s *IntSet) SymmetricDifference(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			s.words[i] ^= tword
 		} else {
 			s.words = append(s.words, tword)
 		}
