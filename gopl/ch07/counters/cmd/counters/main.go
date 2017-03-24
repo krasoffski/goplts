@@ -15,4 +15,12 @@ func main() {
 	var name = "Dolly"
 	fmt.Fprintf(&c, "hello, %s", name)
 	fmt.Println(c)
+
+	var w counters.Words
+	w.Write([]byte("hello, my name is Yury"))
+	fmt.Println(w)
+
+	var l counters.Lines
+	l.Write([]byte("hello\n my\n name\n is\n Yury\n\n\n"))
+	fmt.Println(l)
 }
