@@ -1,13 +1,30 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 type tree struct {
 	value       int
 	left, right *tree
+}
+
+// String returns the trees as a string of the form "{1 2 3}".
+func (t *tree) String() string {
+	// NOTE: not sure solution is correct.
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for _, e := range appendValues(nil, t) {
+		if buf.Len() > len("}") {
+			buf.WriteByte(' ')
+		}
+		fmt.Fprintf(&buf, "%d", e)
+	}
+	buf.WriteByte('}')
+	return buf.String()
 }
 
 // Sort sorts values in place.
@@ -43,10 +60,14 @@ func add(t *tree, value int) *tree {
 }
 
 func main() {
-	data := make([]int, 50)
+	data := make([]int, 10)
+	rand.Seed(time.Now().UTC().UnixNano())
 	for i := range data {
-		data[i] = rand.Int() % 50
+		data[i] = rand.Int() % 10
 	}
-	Sort(data)
-	fmt.Println(data)
+	var root *tree
+	for _, v := range data {
+		root = add(root, v)
+	}
+	fmt.Println(root.String())
 }
