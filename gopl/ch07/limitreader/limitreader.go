@@ -3,7 +3,9 @@ package limitreader
 
 import "io"
 
-func LimitReader(r io.Reader, n int64) io.Reader { return &LimitedReader{r, n} }
+func LimitReader(r io.Reader, n int64) io.Reader {
+	return &LimitedReader{r, n}
+}
 
 type LimitedReader struct {
 	R io.Reader // underlying reader
