@@ -1,15 +1,18 @@
-// https://golang.org/src/io/io.go
 package limitreader
 
 import "io"
 
-func LimitReader(r io.Reader, n int64) io.Reader {
+// NewLimitReader returns a Reader that reads from r
+// but stops with EOF after n bytes.
+func NewLimitReader(r io.Reader, n int64) io.Reader {
 	return &LimitedReader{r, n}
 }
 
+// A LimitedReader reads from R but limits the amount of
+// data returned to just N bytes.
 type LimitedReader struct {
-	R io.Reader // underlying reader
-	N int64     // max bytes remaining
+	R io.Reader
+	N int64
 }
 
 func (l *LimitedReader) Read(p []byte) (n int, err error) {
