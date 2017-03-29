@@ -48,12 +48,6 @@ func (x byArtist) Len() int           { return len(x) }
 func (x byArtist) Less(i, j int) bool { return x[i].Artist < x[j].Artist }
 func (x byArtist) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
-type byYear []*Track
-
-func (x byYear) Len() int           { return len(x) }
-func (x byYear) Less(i, j int) bool { return x[i].Year < x[j].Year }
-func (x byYear) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
-
 type customSort struct {
 	t    []*Track
 	less func(x, y *Track) bool
@@ -65,15 +59,20 @@ func (x customSort) Swap(i, j int)      { x.t[i], x.t[j] = x.t[j], x.t[i] }
 
 func main() {
 	fmt.Println("byArtist:")
-	sort.Sort(byArtist(tracks))
+	sort.Slice(tracks, func(i, j int) bool {
+		return tracks[i].Artist < tracks[j].Artist
+	})
 	printTracks(tracks)
 
 	fmt.Println("\nReverse(byArtist):")
 	sort.Sort(sort.Reverse(byArtist(tracks)))
 	printTracks(tracks)
 
+	// NOTE: only for go version >= 1.8
 	fmt.Println("\nbyYear:")
-	sort.Sort(byYear(tracks))
+	sort.Slice(tracks, func(i, j int) bool {
+		return tracks[i].Year < tracks[j].Year
+	})
 	printTracks(tracks)
 
 	fmt.Println("\nCustom:")
