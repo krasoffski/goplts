@@ -40,7 +40,7 @@ func TestCopy(t *testing.T) {
 	}
 	for i := range x.words {
 		if x.words[i] != y.words[i] {
-			t.Errorf("value x: %d but value y: %s", x.words[i], y.words[i])
+			t.Errorf("value x: %d but value y: %d", x.words[i], y.words[i])
 		}
 	}
 	x.Add(10)
