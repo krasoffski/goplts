@@ -5,18 +5,26 @@ import (
 	"fmt"
 )
 
+// Celsius represent scale degree Celsius.
 type Celsius float64
+
+// Fahrenheit represent scale degree Fahrenheit.
 type Fahrenheit float64
+
+// Kelvin represent scale degree Kelvin.
 type Kelvin float64
 
+// CToF converts Celsius to Fahrenheit.
 func CToF(c Celsius) Fahrenheit {
 	return Fahrenheit(c*9.0/5.0 + 32.0)
 }
 
+// FToC converts Fahrenheit to Celsius.
 func FToC(f Fahrenheit) Celsius {
 	return Celsius((f - 32.0) * 5.0 / 9.0)
 }
 
+// KToC converts Kelvin to Celsius.
 func KToC(k Kelvin) Celsius {
 	return Celsius(k - 273.15)
 }
@@ -48,6 +56,7 @@ func (f *celsiusFlag) Set(s string) error {
 	return fmt.Errorf("invalid temperature %q", s)
 }
 
+// CelsiusFlag parses Celsius temperature from command line.
 func CelsiusFlag(name string, value Celsius, usage string) *Celsius {
 	f := celsiusFlag{value}
 	flag.CommandLine.Var(&f, name, usage)

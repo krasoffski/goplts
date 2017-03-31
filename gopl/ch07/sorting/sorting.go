@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Track represent information about music track.
 type Track struct {
 	Title  string
 	Artist string

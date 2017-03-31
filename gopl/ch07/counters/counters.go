@@ -5,6 +5,7 @@ import (
 	"bytes"
 )
 
+// Bytes represent writer for counting bytes.
 type Bytes int
 
 func (b *Bytes) Write(p []byte) (int, error) {
@@ -12,6 +13,7 @@ func (b *Bytes) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Words represent writer for counting words.
 type Words int
 
 func (w *Words) Write(p []byte) (int, error) {
@@ -28,6 +30,7 @@ func (w *Words) Write(p []byte) (int, error) {
 	return wc, nil
 }
 
+// Lines represent writer for counting lines.
 type Lines int
 
 func (l *Lines) Write(p []byte) (int, error) {
