@@ -40,12 +40,12 @@ func (x customSort) Swap(i, j int)      { x.t[i], x.t[j] = x.t[j], x.t[i] }
 type lessFunc func(i, j int) bool
 type memoSort []lessFunc
 
-func (m *memoSort) By(less lessFunc) lessFunc {
-	*m = append(*m, less)
-	return m.Less
+func (m *memoSort) By(f lessFunc) lessFunc {
+	*m = append(*m, f)
+	return m.less
 }
 
-func (m *memoSort) Less(i, j int) bool {
+func (m *memoSort) less(i, j int) bool {
 	for k := 0; k < len(*m)-1; k++ {
 		f := (*m)[k]
 		switch {
