@@ -37,19 +37,17 @@ func (x customSort) Len() int           { return len(x.t) }
 func (x customSort) Less(i, j int) bool { return x.less(x.t[i], x.t[j]) }
 func (x customSort) Swap(i, j int)      { x.t[i], x.t[j] = x.t[j], x.t[i] }
 
-type memoSort struct {
-	prev []func(i, j int) bool
+type lessFunc func(i, j int) bool
+type memoSort []lessFunc
+
+func (m *memoSort) By(less lessFunc) lessFunc {
+	*m = append(*m, less)
+	return m.Less
 }
 
-func (m *memoSort) By(less func(i, j int) bool) func(i, j int) bool {
-	m.prev = append(m.prev, less)
-	return m.Cmp
-}
-
-func (m *memoSort) Cmp(i, j int) bool {
-	// var k int
-	for k := 0; k < len(m.prev)-1; k++ {
-		f := m.prev[k]
+func (m *memoSort) Less(i, j int) bool {
+	for k := 0; k < len(*m)-1; k++ {
+		f := (*m)[k]
 		switch {
 		case f(i, j):
 			return true
@@ -57,7 +55,6 @@ func (m *memoSort) Cmp(i, j int) bool {
 			return false
 		}
 	}
-	// return m.prev[k](i, j)
 	return false
 }
 
@@ -77,30 +74,30 @@ func length(s string) time.Duration {
 }
 
 func main() {
-	// m := new(memoSort)
-	// sort.Slice(tracks, m.By(func(i, j int) bool {
-	// 	return tracks[i].Title < tracks[j].Title
-	// }))
-	// sort.Slice(tracks, m.By(func(i, j int) bool {
-	// 	return tracks[i].Year < tracks[j].Year
-	// }))
-	// sort.Slice(tracks, m.By(func(i, j int) bool {
-	// 	return tracks[i].Length < tracks[j].Length
-	// }))
+	m := new(memoSort)
+	sort.Slice(tracks, m.By(func(i, j int) bool {
+		return tracks[i].Title < tracks[j].Title
+	}))
+	sort.Slice(tracks, m.By(func(i, j int) bool {
+		return tracks[i].Year < tracks[j].Year
+	}))
+	sort.Slice(tracks, m.By(func(i, j int) bool {
+		return tracks[i].Length < tracks[j].Length
+	}))
 
-	fmt.Println("\nCustom:")
-	sort.Sort(customSort{tracks, func(x, y *Track) bool {
-		if x.Title != y.Title {
-			return x.Title < y.Title
-		}
-		if x.Year != y.Year {
-			return x.Year < y.Year
-		}
-		if x.Length != y.Length {
-			return x.Length < y.Length
-		}
-		return false
-	}})
+	// fmt.Println("\nCustom:")
+	// sort.Sort(customSort{tracks, func(x, y *Track) bool {
+	// 	if x.Title != y.Title {
+	// 		return x.Title < y.Title
+	// 	}
+	// 	if x.Year != y.Year {
+	// 		return x.Year < y.Year
+	// 	}
+	// 	if x.Length != y.Length {
+	// 		return x.Length < y.Length
+	// 	}
+	// 	return false
+	// }})
 
 	printTracks(tracks)
 }
