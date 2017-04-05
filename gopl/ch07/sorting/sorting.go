@@ -17,6 +17,50 @@ type Track struct {
 	Length time.Duration
 }
 
+func printTracks(tracks []*Track) {
+	const format = "%v\t%v\t%v\t%v\t%v\t\n"
+	tw := new(tabwriter.Writer).Init(os.Stdout, 0, 8, 2, ' ', 0)
+	fmt.Fprintf(tw, format, "Title", "Artist", "Album", "Year", "Length")
+	fmt.Fprintf(tw, format, "-----", "------", "-----", "----", "------")
+	for _, t := range tracks {
+		fmt.Fprintf(tw, format, t.Title, t.Artist, t.Album, t.Year, t.Length)
+	}
+	tw.Flush()
+}
+
+type customSort struct {
+	t    []*Track
+	less func(x, y *Track) bool
+}
+
+func (x customSort) Len() int           { return len(x.t) }
+func (x customSort) Less(i, j int) bool { return x.less(x.t[i], x.t[j]) }
+func (x customSort) Swap(i, j int)      { x.t[i], x.t[j] = x.t[j], x.t[i] }
+
+type memoSort struct {
+	prev []func(i, j int) bool
+}
+
+func (m *memoSort) By(less func(i, j int) bool) func(i, j int) bool {
+	m.prev = append(m.prev, less)
+	return m.Cmp
+}
+
+func (m *memoSort) Cmp(i, j int) bool {
+	// var k int
+	for k := 0; k < len(m.prev)-1; k++ {
+		f := m.prev[k]
+		switch {
+		case f(i, j):
+			return true
+		case f(j, i):
+			return false
+		}
+	}
+	// return m.prev[k](i, j)
+	return false
+}
+
 var tracks = []*Track{
 	{"Go", "Delilah", "From the Roots Up", 2012, length("3m38s")},
 	{"Go", "Moby", "Moby", 1992, length("3m37s")},
@@ -32,49 +76,17 @@ func length(s string) time.Duration {
 	return d
 }
 
-func printTracks(tracks []*Track) {
-	const format = "%v\t%v\t%v\t%v\t%v\t\n"
-	tw := new(tabwriter.Writer).Init(os.Stdout, 0, 8, 2, ' ', 0)
-	fmt.Fprintf(tw, format, "Title", "Artist", "Album", "Year", "Length")
-	fmt.Fprintf(tw, format, "-----", "------", "-----", "----", "------")
-	for _, t := range tracks {
-		fmt.Fprintf(tw, format, t.Title, t.Artist, t.Album, t.Year, t.Length)
-	}
-	tw.Flush()
-}
-
-type byArtist []*Track
-
-func (x byArtist) Len() int           { return len(x) }
-func (x byArtist) Less(i, j int) bool { return x[i].Artist < x[j].Artist }
-func (x byArtist) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
-
-type customSort struct {
-	t    []*Track
-	less func(x, y *Track) bool
-}
-
-func (x customSort) Len() int           { return len(x.t) }
-func (x customSort) Less(i, j int) bool { return x.less(x.t[i], x.t[j]) }
-func (x customSort) Swap(i, j int)      { x.t[i], x.t[j] = x.t[j], x.t[i] }
-
 func main() {
-	fmt.Println("byArtist:")
-	sort.Slice(tracks, func(i, j int) bool {
-		return tracks[i].Artist < tracks[j].Artist
-	})
-	printTracks(tracks)
-
-	fmt.Println("\nReverse(byArtist):")
-	sort.Sort(sort.Reverse(byArtist(tracks)))
-	printTracks(tracks)
-
-	// NOTE: only for go version >= 1.8
-	fmt.Println("\nbyYear:")
-	sort.Slice(tracks, func(i, j int) bool {
-		return tracks[i].Year < tracks[j].Year
-	})
-	printTracks(tracks)
+	// m := new(memoSort)
+	// sort.Slice(tracks, m.By(func(i, j int) bool {
+	// 	return tracks[i].Title < tracks[j].Title
+	// }))
+	// sort.Slice(tracks, m.By(func(i, j int) bool {
+	// 	return tracks[i].Year < tracks[j].Year
+	// }))
+	// sort.Slice(tracks, m.By(func(i, j int) bool {
+	// 	return tracks[i].Length < tracks[j].Length
+	// }))
 
 	fmt.Println("\nCustom:")
 	sort.Sort(customSort{tracks, func(x, y *Track) bool {
@@ -89,5 +101,6 @@ func main() {
 		}
 		return false
 	}})
+
 	printTracks(tracks)
 }
