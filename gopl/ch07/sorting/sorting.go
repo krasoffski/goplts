@@ -6,6 +6,8 @@ import (
 	"sort"
 	"text/tabwriter"
 	"time"
+
+	"github.com/krasoffski/gomill/memosort"
 )
 
 // Track represent information about music track.
@@ -28,27 +30,6 @@ func printTracks(tracks []*Track) {
 	tw.Flush()
 }
 
-type lessFunc func(i, j int) bool
-type memoSort []lessFunc
-
-func (m *memoSort) By(f lessFunc) lessFunc {
-	*m = append(*m, f)
-	return m.less
-}
-
-func (m *memoSort) less(i, j int) bool {
-	for k := 0; k < len(*m)-1; k++ {
-		f := (*m)[k]
-		switch {
-		case f(i, j):
-			return true
-		case f(j, i):
-			return false
-		}
-	}
-	return false
-}
-
 var tracks = []*Track{
 	{"Go", "Delilah", "From the Roots Up", 2012, length("3m38s")},
 	{"Go", "Moby", "Moby", 1992, length("3m37s")},
@@ -65,7 +46,7 @@ func length(s string) time.Duration {
 }
 
 func main() {
-	m := new(memoSort)
+	m := memosort.New()
 	sort.Slice(tracks, m.By(func(i, j int) bool {
 		return tracks[i].Title < tracks[j].Title
 	}))
