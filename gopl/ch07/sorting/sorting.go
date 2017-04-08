@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
 	"os"
 	"sort"
 	"text/tabwriter"
@@ -45,7 +48,52 @@ func length(s string) time.Duration {
 	return d
 }
 
+var tracksTemplate = template.Must(template.New("tracksTemplate").Parse(`
+<table style="width:60%">
+<tr style='text-align: left'>
+	<th><a href="?sort=title">Title</a></th>
+	<th><a href="?sort=artist">Artist</a></th>
+	<th><a href="?sort=album">Album</a></th>
+	<th><a href="?sort=year">Year</a></th>
+	<th><a href="?sort=length">Length</a></th>
+</tr>
+{{range .}}
+<tr>
+	<td>{{.Title}}</td>
+	<td>{{.Artist}}</td>
+	<td>{{.Album}}</td>
+	<td>{{.Year}}</td>
+	<td>{{.Length}}</td>
+</tr>
+{{end}}
+`))
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Query().Get("sort") {
+	case "title":
+		sort.Slice(tracks,
+			func(i, j int) bool { return tracks[i].Title < tracks[j].Title })
+	case "artist":
+		sort.Slice(tracks,
+			func(i, j int) bool { return tracks[i].Artist < tracks[j].Artist })
+	case "album":
+		sort.Slice(tracks,
+			func(i, j int) bool { return tracks[i].Album < tracks[j].Album })
+	case "year":
+		sort.Slice(tracks,
+			func(i, j int) bool { return tracks[i].Year < tracks[j].Year })
+	case "length":
+		sort.Slice(tracks,
+			func(i, j int) bool { return tracks[i].Length < tracks[j].Length })
+	}
+
+	if err := tracksTemplate.Execute(w, tracks); err != nil {
+		log.Print(err)
+	}
+}
+
 func main() {
+	// TODO: remove duplicated code for less functions.
 	m := memosort.New()
 	sort.Slice(tracks, m.By(func(i, j int) bool {
 		return tracks[i].Title < tracks[j].Title
@@ -56,6 +104,8 @@ func main() {
 	sort.Slice(tracks, m.By(func(i, j int) bool {
 		return tracks[i].Length < tracks[j].Length
 	}))
-
 	printTracks(tracks)
+	fmt.Println("Starting server...")
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe(":8000", nil))
 }
