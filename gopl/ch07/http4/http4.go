@@ -52,7 +52,7 @@ func (db *database) update(w http.ResponseWriter, req *http.Request) {
 	db.items[item] = price
 	db.Unlock() // Don't use defer to release lock earlier.
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (db *database) create(w http.ResponseWriter, req *http.Request) {
@@ -72,7 +72,7 @@ func (db *database) create(w http.ResponseWriter, req *http.Request) {
 	db.items[item] = price
 	db.Unlock() // Don't use defer to release lock earlier.
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (db *database) remove(w http.ResponseWriter, req *http.Request) {
@@ -87,7 +87,7 @@ func (db *database) remove(w http.ResponseWriter, req *http.Request) {
 	delete(db.items, item)
 	db.Unlock() // Don't use defer to release lock earlier.
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func getParams(req *http.Request) (string, dollars, error) {
