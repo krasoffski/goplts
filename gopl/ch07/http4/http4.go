@@ -104,6 +104,7 @@ func main() {
 	db := database{items: map[string]dollars{"shoes": 50, "socks": 5}}
 	// Don't use here PUT, POST, DELETE due to task requirements.
 	http.HandleFunc("/list", db.list)
+	http.HandleFunc("/price", db.price)
 	http.HandleFunc("/create", db.create)
 	http.HandleFunc("/update", db.update)
 	http.HandleFunc("/remove", db.remove)
