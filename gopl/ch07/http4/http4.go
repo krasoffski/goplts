@@ -25,7 +25,7 @@ var templ = template.Must(template.New("itemlist").Parse(`
 <div class="container">
   <h2>Items with prices</h2>
   <table class="table table-bordered table-striped table-hover">
-    <thead class="thead-inverse">
+    <thead>
       <tr>
         <th>Item</th>
         <th>Price</th>
