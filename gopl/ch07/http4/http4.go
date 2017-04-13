@@ -2,11 +2,47 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 	"sync"
 )
+
+var templ = template.Must(template.New("itemlist").Parse(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Items list</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <h2>Items with prices</h2>
+  <table class="table table-bordered table-striped table-hover">
+    <thead class="thead-inverse">
+      <tr>
+        <th>Item</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{range $item, $price := .}}
+    <tr>
+      <td>{{ $item }}</td><td>{{ $price | printf "%4.2f"}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+</div>
+</body>
+</html>
+`))
 
 type dollars float32
 
@@ -20,8 +56,8 @@ type database struct {
 }
 
 func (db *database) list(w http.ResponseWriter, req *http.Request) {
-	for item, price := range db.items {
-		fmt.Fprintf(w, "%s: %s\n", item, price)
+	if err := templ.Execute(w, db.items); err != nil {
+		log.Fatal(err)
 	}
 }
 
