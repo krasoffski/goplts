@@ -11,6 +11,8 @@ type Expr interface {
 	Eval(env Env) float64
 	// Check reports errors in this Expr and adds its Vars to the set.
 	Check(vars map[Var]bool) error
+	// String returns string representation of expression.
+	String() string
 }
 
 // A Var identifies a variable, e.g., x.
