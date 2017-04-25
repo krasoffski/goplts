@@ -53,3 +53,13 @@ func (c call) Eval(env Env) float64 {
 	}
 	panic(fmt.Sprintf("unsupported function call: %s", c.fn))
 }
+
+func (m min) Eval(env Env) float64 {
+	m0 := m.args[0].Eval(env)
+	for _, arg := range m.args {
+		if val := arg.Eval(env); val < m0 {
+			m0 = val
+		}
+	}
+	return m0
+}
