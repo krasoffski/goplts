@@ -74,7 +74,7 @@ type min struct {
 
 func (m min) String() string {
 	buf := &bytes.Buffer{}
-	fmt.Fprint(buf, "min(")
+	buf.WriteString("min(")
 	for i, arg := range m.args {
 		if i > 0 {
 			buf.WriteString(", ")

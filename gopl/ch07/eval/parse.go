@@ -117,6 +117,9 @@ func parsePrimary(lex *lexer) Expr {
 			}
 		}
 		lex.next()
+		if id == "min" {
+			return min{args}
+		}
 		return call{id, args}
 	case scanner.Int, scanner.Float:
 		f, err := strconv.ParseFloat(lex.text(), 64)
