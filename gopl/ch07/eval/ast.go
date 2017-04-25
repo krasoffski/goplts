@@ -66,3 +66,21 @@ func (e call) String() string {
 	buf.WriteByte(')')
 	return buf.String()
 }
+
+// A min computes the minimum from it's arguments.
+type min struct {
+	args []Expr
+}
+
+func (m min) String() string {
+	buf := &bytes.Buffer{}
+	fmt.Fprint(buf, "min(")
+	for i, arg := range m.args {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		write(buf, arg)
+	}
+	buf.WriteByte(')')
+	return buf.String()
+}
