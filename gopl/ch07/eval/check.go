@@ -49,3 +49,16 @@ func (c call) Check(vars map[Var]bool) error {
 	}
 	return nil
 }
+
+func (m min) Check(vars map[Var]bool) error {
+	if len(m.args) < 1 {
+		return fmt.Errorf("call to min has %d args, want 1 or more",
+			len(m.args))
+	}
+	for _, arg := range m.args {
+		if err := arg.Check(vars); err != nil {
+			return err
+		}
+	}
+	return nil
+}
