@@ -14,30 +14,32 @@ func init() {
 	log.SetFlags(0)
 }
 
+func checkErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func main() {
+	var err error
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter formula: ")
 	text, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatalln(err)
-	}
-	// expr, err := eval.Parse("min(sqrt(A), pow(y, 3))")
+	checkErr(err)
+
 	expr, err := eval.Parse(text)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	checkErr(err)
+
 	vars := make(map[eval.Var]bool)
-	if err := expr.Check(vars); err != nil {
-		log.Fatal(err)
-	}
+	err = expr.Check(vars)
+	checkErr(err)
+
+	var val float64
 	env := make(eval.Env)
 	for v := range vars {
-		var val float64
 		fmt.Printf("Enter %s: ", v)
-		_, err := fmt.Scanf("%f\n", &val)
-		if err != nil {
-			log.Fatalln(err)
-		}
+		_, err = fmt.Scanf("%f\n", &val)
+		checkErr(err)
 		env[v] = val
 	}
 	fmt.Println(expr.Eval(env))
