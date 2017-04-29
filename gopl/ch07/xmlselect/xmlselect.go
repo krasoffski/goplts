@@ -82,7 +82,15 @@ func containsAll(stack []xml.StartElement, search []*Element) bool {
 			return true
 		}
 		if stack[0].Name.Local == search[0].Name {
-			search = search[1:]
+			var catch int
+			for _, a := range stack[0].Attr {
+				if v, ok := search[0].Attrs[a.Name.Local]; ok && a.Value == v {
+					catch++
+				}
+			}
+			if catch == len(search[0].Attrs) {
+				search = search[1:]
+			}
 		}
 		stack = stack[1:]
 	}
