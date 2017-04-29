@@ -10,18 +10,14 @@ import (
 
 type Element struct {
 	Name  string
-	Attrs []Attr
+	Attrs map[string]string
 }
 
 func NewElement(name string) *Element {
 	e := new(Element)
 	e.Name = name
-	e.Attrs = make([]Attr, 0)
+	e.Attrs = make(map[string]string)
 	return e
-}
-
-type Attr struct {
-	Name, Value string
 }
 
 func main() {
@@ -54,19 +50,19 @@ func main() {
 }
 
 func parseInput(input []string) (elements []*Element, err error) {
-	var e *Element
-	for i, s := range input {
+	if len(input) > 0 && strings.Contains(input[0], "=") {
+		return nil, fmt.Errorf("attribute before tag name: %s", input[0])
+	}
+
+	var e *Element // Previous element added to elements.
+	for _, s := range input {
 		if strings.Contains(s, "=") {
-			if i > 0 {
-				fmt.Printf("%d, %s\n", i, s)
-				a := strings.SplitN(s, "=", 2)
-				e.Attrs = append(e.Attrs, Attr{a[0], a[1]})
-			} else {
-				return nil, fmt.Errorf("attribute before tag name: %s", s)
-			}
+			a := strings.SplitN(s, "=", 2)
+			e.Attrs[a[0]] = a[1]
+		} else {
+			e = NewElement(s)
+			elements = append(elements, e)
 		}
-		e = NewElement(s)
-		elements = append(elements, e)
 	}
 	return
 }
