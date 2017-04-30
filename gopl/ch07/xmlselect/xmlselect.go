@@ -8,11 +8,13 @@ import (
 	"strings"
 )
 
+// Element is tag representation for searching.
 type Element struct {
 	Name  string
 	Attrs map[string]string
 }
 
+// NewElement returns new Element with initialized fields.
 func NewElement(name string) *Element {
 	e := new(Element)
 	e.Name = name
