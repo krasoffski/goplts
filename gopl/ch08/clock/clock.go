@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// port := flag.Int("port", 8000, "clock port")
 	listener, err := net.Listen("tcp", "localhost:8000")
 	if err != nil {
 		log.Fatal(err)
@@ -18,7 +19,7 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		handleConn(conn)
+		go handleConn(conn)
 	}
 }
 
