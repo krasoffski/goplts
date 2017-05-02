@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -13,11 +15,26 @@ func main() {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	mustCopy(os.Stdout, conn)
+	prettyPrint(conn)
+	// mustCopy(os.Stdout, conn)
 }
 
 func mustCopy(dst io.Writer, src io.Reader) {
 	if _, err := io.Copy(dst, src); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func prettyPrint(src io.Reader) {
+	reader := bufio.NewReader(src)
+	for {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Fprintf(os.Stdout, "\r%s", string(line))
 	}
 }
