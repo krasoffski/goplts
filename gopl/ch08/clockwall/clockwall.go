@@ -8,51 +8,66 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
-type TimeSrv struct {
+// timeSrv represents time server connection with chan for reading time.
+type timeSrv struct {
 	Name string
 	Time chan string
+	Conn net.Conn
 }
 
-func NewTimeSrv(name string) *TimeSrv {
-	srv := new(TimeSrv)
+// newTimeSrv initializes new time server with underlying channel.
+func newTimeSrv(name string, conn net.Conn) *timeSrv {
+	srv := new(timeSrv)
 	srv.Name = name
+	srv.Conn = conn
 	srv.Time = make(chan string)
 	return srv
 }
 
 func main() {
-	servers := make([]*TimeSrv, 0, len(os.Args)-1)
+	servers := make([]*timeSrv, 0, len(os.Args)-1)
+
 	for _, param := range os.Args[1:] {
 		args := strings.Split(param, "=")
 		conn, err := net.Dial("tcp", args[1])
 		if err != nil {
 			log.Fatal(err)
 		}
-		s := NewTimeSrv(args[0])
+
+		s := newTimeSrv(args[0], conn)
 		servers = append(servers, s)
-		go handleConn(conn, s)
+		go fetchTime(s)
 	}
+
+	var names string
+	for _, name := range servers {
+		names += "\t" + name.Name
+	}
+	fmt.Println(names)
+
 	for {
-		var curTime string
+		time.Sleep(time.Second)
+		var time string
 		for _, s := range servers {
-			curTime += (" " + <-s.Time + " ")
+			t, ok := <-s.Time
+			if !ok {
+				t = "##:##:##"
+			}
+			time += "\t" + t
 		}
-		fmt.Fprintf(os.Stdout, "\r%s", curTime)
+		fmt.Printf("\r%s", time)
 	}
 }
 
-func mustCopy(dst io.Writer, src io.Reader) {
-	if _, err := io.Copy(dst, src); err != nil {
-		log.Fatal(err)
-	}
-}
+func fetchTime(ts *timeSrv) {
+	defer ts.Conn.Close()
+	defer close(ts.Time)
 
-func handleConn(conn net.Conn, srv *TimeSrv) {
-	reader := bufio.NewReader(conn)
-	defer conn.Close()
-	defer close(srv.Time)
+	reader := bufio.NewReader(ts.Conn)
+
 	for {
 		line, _, err := reader.ReadLine()
 		if err == io.EOF {
@@ -61,6 +76,6 @@ func handleConn(conn net.Conn, srv *TimeSrv) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		srv.Time <- string(line)
+		ts.Time <- string(line)
 	}
 }
