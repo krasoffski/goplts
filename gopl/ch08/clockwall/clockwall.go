@@ -7,16 +7,40 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 )
 
+type TimeSrv struct {
+	Name string
+	Time chan string
+}
+
+func NewTimeSrv(name string) *TimeSrv {
+	srv := new(TimeSrv)
+	srv.Name = name
+	srv.Time = make(chan string)
+	return srv
+}
+
 func main() {
-	conn, err := net.Dial("tcp", "localhost:8000")
-	if err != nil {
-		log.Fatal(err)
+	servers := make([]*TimeSrv, 0, len(os.Args)-1)
+	for _, param := range os.Args[1:] {
+		args := strings.Split(param, "=")
+		conn, err := net.Dial("tcp", args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		s := NewTimeSrv(args[0])
+		servers = append(servers, s)
+		go handleConn(conn, s)
 	}
-	defer conn.Close()
-	prettyPrint(conn)
-	// mustCopy(os.Stdout, conn)
+	for {
+		var curTime string
+		for _, s := range servers {
+			curTime += (" " + <-s.Time + " ")
+		}
+		fmt.Fprintf(os.Stdout, "\r%s", curTime)
+	}
 }
 
 func mustCopy(dst io.Writer, src io.Reader) {
@@ -25,8 +49,10 @@ func mustCopy(dst io.Writer, src io.Reader) {
 	}
 }
 
-func prettyPrint(src io.Reader) {
-	reader := bufio.NewReader(src)
+func handleConn(conn net.Conn, srv *TimeSrv) {
+	reader := bufio.NewReader(conn)
+	defer conn.Close()
+	defer close(srv.Time)
 	for {
 		line, _, err := reader.ReadLine()
 		if err == io.EOF {
@@ -35,6 +61,6 @@ func prettyPrint(src io.Reader) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Fprintf(os.Stdout, "\r%s", string(line))
+		srv.Time <- string(line)
 	}
 }
