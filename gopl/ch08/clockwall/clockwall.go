@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"time"
 )
+
+const WIDTH = 16
 
 // timeSrv represents time server connection with chan for reading time.
 type timeSrv struct {
@@ -42,11 +45,21 @@ func main() {
 		go fetchTime(s)
 	}
 
-	var names string
-	for _, name := range servers {
-		names += "\t" + name.Name
+	var title bytes.Buffer
+
+	for _, srv := range servers {
+		name := srv.Name
+		if len(name) > WIDTH {
+			name = fmt.Sprintf("%s...", name[:WIDTH-3])
+		}
+		title.WriteString(fmt.Sprintf("%*s|", WIDTH, name))
 	}
-	fmt.Println(names)
+	str := title.String()
+	title.WriteRune('\n')
+	for i := 0; i < len(str); i++ {
+		title.WriteRune('-')
+	}
+	fmt.Println(title.String())
 
 	for {
 		time.Sleep(time.Second)
@@ -56,7 +69,7 @@ func main() {
 			if !ok {
 				t = "##:##:##"
 			}
-			time += "\t" + t
+			time += fmt.Sprintf("%*s|", WIDTH, t)
 		}
 		fmt.Printf("\r%s", time)
 	}
