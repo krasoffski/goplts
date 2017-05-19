@@ -15,67 +15,52 @@ import (
 // WIDTH represents number of char allocated for time zone name.
 const WIDTH = 16
 
-// timeSrv represents time server connection with chan for reading time.
-type timeSrv struct {
-	Name string
-	Time chan string
-	Conn net.Conn
+// srv represents time server connection with chan for reading time.
+type srv struct {
+	name string
+	addr string
+	time chan string
+	conn net.Conn
 }
 
-// newTimeSrv initializes new time server with underlying channel.
-func newTimeSrv(name string, conn net.Conn) *timeSrv {
-	srv := new(timeSrv)
-	srv.Name = name
-	srv.Conn = conn
-	srv.Time = make(chan string)
-	return srv
-}
+// servers represents list of time srv and methods to with all of them.
+type servers []*srv
 
-func main() {
-	servers := make([]*timeSrv, 0, len(os.Args)-1)
+func (s servers) printTitle() {
+	var buf bytes.Buffer
 
-	for _, param := range os.Args[1:] {
-		args := strings.Split(param, "=")
-		conn, err := net.Dial("tcp", args[1])
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		s := newTimeSrv(args[0], conn)
-		servers = append(servers, s)
-		go fetchTime(s)
-	}
-
-	var title bytes.Buffer
-
-	for _, srv := range servers {
-		name := srv.Name
+	for _, ts := range s {
+		name := ts.name
 		if len(name) > WIDTH {
 			name = fmt.Sprintf("%s...", name[:WIDTH-3])
 		}
-		title.WriteString(fmt.Sprintf("%*s|", WIDTH, name))
+		buf.WriteString(fmt.Sprintf("%*s|", WIDTH, name))
 	}
-	str := title.String()
-	title.WriteRune('\n')
 
-	step := WIDTH
-	for i := 0; i < len(str); i++ {
-		if i == step {
-			title.WriteString("+")
-			step += (WIDTH + 1)
+	// Don't care about non-ascii names.
+	rowLen := buf.Len()
+	buf.WriteRune('\n')
+
+	plusIndex := WIDTH
+	for i := 0; i < rowLen; i++ {
+		if i == plusIndex {
+			buf.WriteRune('+')
+			plusIndex += (WIDTH + 1)
 		} else {
-			title.WriteRune('-')
+			buf.WriteRune('-')
 		}
 	}
-	fmt.Println(title.String())
+	fmt.Println(buf.String())
+}
 
+func (s servers) printTime(sleep time.Duration) {
 	for {
-		time.Sleep(time.Second)
+		time.Sleep(sleep)
 		var time string
-		for _, s := range servers {
-			t, ok := <-s.Time
+		for _, ts := range s {
+			t, ok := <-ts.time
 			if !ok {
-				t = "##:##:##"
+				t = "DISABLED"
 			}
 			time += fmt.Sprintf("%*s|", WIDTH, t)
 		}
@@ -83,20 +68,49 @@ func main() {
 	}
 }
 
-func fetchTime(ts *timeSrv) {
-	defer ts.Conn.Close()
-	defer close(ts.Time)
+func (s servers) startFetching() {
+	for _, ts := range s {
+		go func(server *srv) {
+			defer server.conn.Close()
+			defer close(server.time)
 
-	reader := bufio.NewReader(ts.Conn)
+			reader := bufio.NewReader(server.conn)
 
-	for {
-		line, _, err := reader.ReadLine()
-		if err == io.EOF {
-			break
-		}
+			for {
+				line, _, err := reader.ReadLine()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					log.Fatal(err)
+				}
+				server.time <- string(line)
+			}
+		}(ts)
+	}
+}
+
+func (s servers) dialAll() {
+	for _, ts := range s {
+		conn, err := net.Dial("tcp", ts.addr)
 		if err != nil {
 			log.Fatal(err)
 		}
-		ts.Time <- string(line)
+		ts.conn = conn
 	}
+}
+
+func main() {
+	timeServers := make(servers, 0, len(os.Args)-1)
+
+	for _, param := range os.Args[1:] {
+		args := strings.Split(param, "=")
+		timeServers = append(timeServers,
+			&srv{name: args[0], addr: args[1], time: make(chan string)})
+	}
+
+	timeServers.dialAll()
+	timeServers.startFetching()
+	timeServers.printTitle()
+	timeServers.printTime(time.Second)
 }
