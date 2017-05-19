@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// WIDTH represents number of char allocated for time zone name.
 const WIDTH = 16
 
 // timeSrv represents time server connection with chan for reading time.
@@ -56,8 +57,15 @@ func main() {
 	}
 	str := title.String()
 	title.WriteRune('\n')
+
+	step := WIDTH
 	for i := 0; i < len(str); i++ {
-		title.WriteRune('-')
+		if i == step {
+			title.WriteString("+")
+			step += (WIDTH + 1)
+		} else {
+			title.WriteRune('-')
+		}
 	}
 	fmt.Println(title.String())
 
