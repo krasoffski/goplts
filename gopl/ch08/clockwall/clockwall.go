@@ -56,15 +56,24 @@ func (s servers) printTitle() {
 func (s servers) printTime(sleep time.Duration) {
 	for {
 		time.Sleep(sleep)
+
+		var down int
 		var time string
+
 		for _, ts := range s {
 			t, ok := <-ts.time
 			if !ok {
-				t = "DISABLED"
+				t = "DISCONNECTED"
+				down++
 			}
 			time += fmt.Sprintf("%*s|", WIDTH, t)
 		}
 		fmt.Printf("\r%s", time)
+		if down == len(s) {
+			fmt.Fprintln(os.Stderr, "\nall time servers are down! exiting...")
+			os.Exit(1)
+		}
+
 	}
 }
 
