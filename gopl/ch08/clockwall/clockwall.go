@@ -30,11 +30,10 @@ func (s servers) printTitle() {
 	var buf bytes.Buffer
 
 	for _, ts := range s {
-		name := ts.name
-		if len(name) > WIDTH {
-			name = fmt.Sprintf("%s...", name[:WIDTH-3])
+		if len(ts.name) > WIDTH {
+			name = fmt.Sprintf("%s...", ts.name[:WIDTH-3])
 		}
-		buf.WriteString(fmt.Sprintf("%*s|", WIDTH, name))
+		buf.WriteString(fmt.Sprintf("%*s|", WIDTH, ts.name))
 	}
 
 	// Don't care about non-ascii names.
