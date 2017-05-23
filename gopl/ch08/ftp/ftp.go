@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -36,7 +37,7 @@ func (s *Server) Serve() {
 			continue
 		}
 		h := NewHandler(conn, s.Path)
-		go h.Do()
+		go h.Start()
 	}
 }
 
@@ -51,7 +52,7 @@ type Handler struct {
 	Auth bool
 }
 
-func (h *Handler) Do() {
+func (h *Handler) Start() {
 	defer h.Conn.Close()
 
 	h.Message(220, "Welcome to Go language FTPd")
@@ -75,14 +76,14 @@ func (h *Handler) SendLine(text string) {
 	io.WriteString(h.Conn, text+"\r\n")
 }
 
-func (h *Handler) Message(code int, text string) {
-	h.SendLine(fmt.Sprintf("%d %s", code, text))
+func (h *Handler) Message(code int, format string, args ...interface{}) {
+	h.SendLine(strconv.Itoa(code) + " " + fmt.Sprintf(format, args...))
 }
 
 func (h *Handler) HandleUSER(name string) {
 	if h.User == "" {
 		if _, ok := users[name]; ok {
-			h.Message(331, fmt.Sprintf("User %s OK. Password required", name))
+			h.Message(331, "User %s OK. Password required", name)
 			h.User = name
 		} else {
 			h.Message(530, "Login or password incorrect!")
@@ -95,7 +96,7 @@ func (h *Handler) HandleUSER(name string) {
 func (h *Handler) HandlePASS(password string) {
 	if h.User != "" {
 		if p := users[h.User]; !h.Auth && password == p {
-			h.Message(230, fmt.Sprintf("Password is OK. Working directory %s", h.Path))
+			h.Message(230, "Password is OK. Working directory %s", h.Path)
 		} else {
 			// ???
 		}
