@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -14,6 +15,7 @@ import (
 var users = map[string]string{
 	"anonymous":  "anonymous",
 	"krasoffski": "krasoffski",
+	"test":       ".test",
 }
 
 func NewServer(address, path string) *Server {
@@ -80,6 +82,10 @@ func (h *Handler) handleCmd(cmd string, args []string) {
 		h.HandlePASS(args)
 	case "LIST":
 		h.HandleLIST(args)
+	case "PWD":
+		h.HandlePWD(args)
+	default:
+		h.notImplemented(args)
 	}
 }
 
@@ -91,10 +97,13 @@ func (h *Handler) Message(code int, format string, args ...interface{}) {
 	h.SendLine(strconv.Itoa(code) + " " + fmt.Sprintf(format, args...))
 }
 
+func (h *Handler) notImplemented(args []string) {
+	h.Message(502, "Not implemented!")
+}
+
 func (h *Handler) HandleUSER(args []string) {
 	if h.User == "" {
 		name := args[0]
-		fmt.Println(name)
 		if _, ok := users[name]; ok {
 			h.Message(331, "User %s OK. Password required", name)
 			h.User = name
@@ -112,10 +121,10 @@ func (h *Handler) HandlePASS(args []string) {
 		if p := users[h.User]; !h.Auth && password == p {
 			h.Message(230, "Password is OK. Working directory is %s", h.Path)
 		} else {
-			// ???
+			h.Message(530, "Password is incorrect!")
 		}
 	} else {
-		h.Message(530, "Login or password incorrect!")
+		h.Message(530, "Please, specify login first!")
 	}
 }
 
@@ -138,6 +147,11 @@ func (h *Handler) HandleLIST(args []string) {
 	h.Message(226, "Done")
 }
 
-func (h *Handler) notImplemented(args []string) {
-	h.Message(502, "Not implemented! %s", args)
+func (h *Handler) HandlePWD(args []string) {
+	absPath, err := filepath.Abs(h.Path)
+	if err != nil {
+		h.Message(550, "Directory not found: '%s'", h.Path)
+	}
+	h.Message(257, "Working directory is: '%s'", absPath)
+
 }
