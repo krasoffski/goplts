@@ -45,7 +45,11 @@ func (s *Server) Serve() {
 }
 
 func NewHandler(conn net.Conn, path string) *Handler {
-	return &Handler{Conn: conn, Path: path}
+
+	return &Handler{Conn: conn, Path: path,
+		Clnt: conn.RemoteAddr().String(),
+		Quit: make(chan bool),
+		Text: make(chan string)}
 }
 
 type Handler struct {
@@ -53,24 +57,57 @@ type Handler struct {
 	User string
 	Path string
 	Auth bool
+	Clnt string
+	Quit chan bool
+	Text chan string
 }
 
 func (h *Handler) Start() {
+	defer log.Printf("%s: Disconnected", h.Clnt)
 	defer h.Conn.Close()
 
+	log.Printf("%s: Connected", h.Clnt)
+
 	h.Message(220, "Welcome to Go language FTPd")
+	go h.startReader()
+	log.Printf("%s: Reader started", h.Clnt)
+	for {
+		select {
+		case <-h.Quit:
+			return
+		case text, ok := <-h.Text:
+			if ok {
+				h.splitText(text)
+			}
+		}
+	}
+}
+
+func (h *Handler) startReader() {
+	// TODO: not sure about solution here.
+	// Idea is following, if Conn is closed, s.Scan returns false and loop is
+	// finished. As a result chan Text will be closed. Need QA.
+	defer log.Printf("%s: Reader stopped", h.Clnt)
+	defer close(h.Text)
+
 	s := bufio.NewScanner(h.Conn)
 	for s.Scan() {
-		args := strings.Split(s.Text(), " ")
-		l := len(args)
-		switch l {
-		case 1:
-			h.handleCmd(args[0], []string{})
-		case 2:
-			h.handleCmd(args[0], args[1:])
-		default:
-			h.notImplemented(args)
-		}
+		t := s.Text()
+		log.Printf("%s: Text: '%s'", h.Clnt, t)
+		h.Text <- t
+	}
+}
+
+func (h *Handler) splitText(text string) {
+	args := strings.Split(text, " ")
+	l := len(args)
+	switch l {
+	case 1:
+		h.handleCmd(args[0], []string{})
+	case 2:
+		h.handleCmd(args[0], args[1:])
+	default:
+		h.notImplemented(args)
 	}
 }
 
@@ -84,6 +121,8 @@ func (h *Handler) handleCmd(cmd string, args []string) {
 		h.HandleLIST(args)
 	case "PWD":
 		h.HandlePWD(args)
+	case "QUIT":
+		h.HandleQUIT(args)
 	default:
 		h.notImplemented(args)
 	}
@@ -98,10 +137,12 @@ func (h *Handler) Message(code int, format string, args ...interface{}) {
 }
 
 func (h *Handler) notImplemented(args []string) {
-	h.Message(502, "Not implemented!")
+	log.Printf("%s: notImplemented", h.Clnt)
+	h.Message(502, "Not implemented: %s", args)
 }
 
 func (h *Handler) HandleUSER(args []string) {
+	log.Printf("%s: HandleUSER", h.Clnt)
 	if h.User == "" {
 		name := args[0]
 		if _, ok := users[name]; ok {
@@ -116,6 +157,7 @@ func (h *Handler) HandleUSER(args []string) {
 }
 
 func (h *Handler) HandlePASS(args []string) {
+	log.Printf("%s: HandlePASS", h.Clnt)
 	if h.User != "" {
 		password := args[0]
 		if p := users[h.User]; !h.Auth && password == p {
@@ -129,6 +171,7 @@ func (h *Handler) HandlePASS(args []string) {
 }
 
 func (h *Handler) HandleLIST(args []string) {
+	log.Printf("%s: HandleList", h.Clnt)
 	var directory string
 	if len(args) == 0 {
 		directory = h.Path
@@ -148,10 +191,17 @@ func (h *Handler) HandleLIST(args []string) {
 }
 
 func (h *Handler) HandlePWD(args []string) {
+	log.Printf("%s: HandlePWD", h.Clnt)
 	absPath, err := filepath.Abs(h.Path)
 	if err != nil {
 		h.Message(550, "Directory not found: '%s'", h.Path)
 	}
 	h.Message(257, "Working directory is: '%s'", absPath)
 
+}
+
+func (h *Handler) HandleQUIT(args []string) {
+	log.Printf("%s: HandleQUIT", h.Clnt)
+	close(h.Quit)
+	h.Message(226, "Buy %s", h.User)
 }
