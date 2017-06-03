@@ -28,5 +28,5 @@ func main() {
 	addr := fmt.Sprintf("%s:%s", *host, *port)
 	fmt.Printf("running at %s in %s\n", addr, wd)
 	s := ftp.NewServer(addr, wd)
-	s.Serve()
+	s.Run()
 }

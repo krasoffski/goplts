@@ -27,7 +27,7 @@ type Server struct {
 	Path string
 }
 
-func (s *Server) Serve() {
+func (s *Server) Run() {
 
 	listener, err := net.Listen("tcp", s.Addr)
 	if err != nil {
@@ -40,12 +40,11 @@ func (s *Server) Serve() {
 			continue
 		}
 		h := NewHandler(conn, s.Path)
-		go h.Start()
+		go h.Serve()
 	}
 }
 
 func NewHandler(conn net.Conn, path string) *Handler {
-
 	return &Handler{Conn: conn, Path: path,
 		Clnt: conn.RemoteAddr().String(),
 		Quit: make(chan bool),
@@ -62,7 +61,7 @@ type Handler struct {
 	Text chan string
 }
 
-func (h *Handler) Start() {
+func (h *Handler) Serve() {
 	defer log.Printf("%s: Disconnected", h.Clnt)
 	defer h.Conn.Close()
 
