@@ -18,15 +18,18 @@ var users = map[string]string{
 	"test":       ".test",
 }
 
+// NewServer returns an instance of Server.
 func NewServer(address, path string) *Server {
 	return &Server{Addr: address, Path: path}
 }
 
+// Server represents FTP server with method Run.
 type Server struct {
 	Addr string
 	Path string
 }
 
+// Run starts server and awaits for clients.
 func (s *Server) Run() {
 
 	listener, err := net.Listen("tcp", s.Addr)
@@ -44,6 +47,7 @@ func (s *Server) Run() {
 	}
 }
 
+// NewHandler returns initialized FTP commands handler for client.
 func NewHandler(conn net.Conn, path string) *Handler {
 	return &Handler{Conn: conn, Path: path,
 		Clnt: conn.RemoteAddr().String(),
@@ -51,6 +55,7 @@ func NewHandler(conn net.Conn, path string) *Handler {
 		Text: make(chan string)}
 }
 
+// Handler represents FTP commands handler for client connection.
 type Handler struct {
 	Conn net.Conn
 	User string
