@@ -66,6 +66,7 @@ type Handler struct {
 	Text chan string
 }
 
+// Serve gets and executes client commands.
 func (h *Handler) Serve() {
 	defer log.Printf("%s: Disconnected", h.Clnt)
 	defer h.Conn.Close()
@@ -132,10 +133,12 @@ func (h *Handler) handleCmd(cmd string, args []string) {
 	}
 }
 
+// SendLine sends provided text terminated with CR+LF.
 func (h *Handler) SendLine(text string) {
 	io.WriteString(h.Conn, text+"\r\n")
 }
 
+// Message creates FTP message with required code and text.
 func (h *Handler) Message(code int, format string, args ...interface{}) {
 	h.SendLine(strconv.Itoa(code) + " " + fmt.Sprintf(format, args...))
 }
@@ -145,6 +148,7 @@ func (h *Handler) notImplemented(args []string) {
 	h.Message(502, "Not implemented: %s", args)
 }
 
+// HandleUSER checks that use exists
 func (h *Handler) HandleUSER(args []string) {
 	log.Printf("%s: HandleUSER", h.Clnt)
 	if h.User == "" {
@@ -160,6 +164,7 @@ func (h *Handler) HandleUSER(args []string) {
 	}
 }
 
+// HandlePASS checks that password is valid for provided user.
 func (h *Handler) HandlePASS(args []string) {
 	log.Printf("%s: HandlePASS", h.Clnt)
 	if h.User != "" {
@@ -174,6 +179,7 @@ func (h *Handler) HandlePASS(args []string) {
 	}
 }
 
+// HandleLIST lists current working directory.
 func (h *Handler) HandleLIST(args []string) {
 	log.Printf("%s: HandleList", h.Clnt)
 	var directory string
@@ -194,6 +200,7 @@ func (h *Handler) HandleLIST(args []string) {
 	h.Message(226, "Done")
 }
 
+// HandlePWD provides current working directory.
 func (h *Handler) HandlePWD(args []string) {
 	log.Printf("%s: HandlePWD", h.Clnt)
 	absPath, err := filepath.Abs(h.Path)
@@ -204,6 +211,7 @@ func (h *Handler) HandlePWD(args []string) {
 
 }
 
+// HandleQUIT close user connection.
 func (h *Handler) HandleQUIT(args []string) {
 	log.Printf("%s: HandleQUIT", h.Clnt)
 	close(h.Quit)
