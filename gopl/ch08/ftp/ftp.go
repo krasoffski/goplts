@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -64,6 +65,7 @@ type Handler struct {
 	Clnt string
 	Quit chan bool
 	Text chan string
+	Port string
 }
 
 // Serve gets and executes client commands.
@@ -73,7 +75,7 @@ func (h *Handler) Serve() {
 
 	log.Printf("%s: Connected", h.Clnt)
 
-	h.Message(220, "Welcome to Go language FTPd")
+	h.WriteMessage(220, "Welcome to Go language FTPd")
 	go h.startReader()
 	log.Printf("%s: Reader started", h.Clnt)
 	for {
@@ -122,30 +124,34 @@ func (h *Handler) handleCmd(cmd string, args []string) {
 		h.HandleUSER(args)
 	case "PASS":
 		h.HandlePASS(args)
-	case "LIST":
+	case "LIST", "NLST":
 		h.HandleLIST(args)
 	case "PWD":
 		h.HandlePWD(args)
 	case "QUIT":
 		h.HandleQUIT(args)
+	case "PORT":
+		h.HandlePORT(args)
+	case "RETR":
+		h.HandleRETR(args)
 	default:
 		h.notImplemented(args)
 	}
 }
 
-// SendLine sends provided text terminated with CR+LF.
-func (h *Handler) SendLine(text string) {
+// WriteLine sends provided text terminated with CR+LF.
+func (h *Handler) WriteLine(text string) {
 	io.WriteString(h.Conn, text+"\r\n")
 }
 
-// Message creates FTP message with required code and text.
-func (h *Handler) Message(code int, format string, args ...interface{}) {
-	h.SendLine(strconv.Itoa(code) + " " + fmt.Sprintf(format, args...))
+// WriteMessage creates FTP message with required code and text.
+func (h *Handler) WriteMessage(code int, format string, args ...interface{}) {
+	h.WriteLine(strconv.Itoa(code) + " " + fmt.Sprintf(format, args...))
 }
 
 func (h *Handler) notImplemented(args []string) {
 	log.Printf("%s: notImplemented", h.Clnt)
-	h.Message(502, "Not implemented: %s", args)
+	h.WriteMessage(502, "Not implemented: %s", args)
 }
 
 // HandleUSER checks that use exists
@@ -154,10 +160,10 @@ func (h *Handler) HandleUSER(args []string) {
 	if h.User == "" {
 		name := args[0]
 		if _, ok := users[name]; ok {
-			h.Message(331, "User %s OK. Password required", name)
+			h.WriteMessage(331, "User %s OK. Password required", name)
 			h.User = name
 		} else {
-			h.Message(530, "Login or password incorrect!")
+			h.WriteMessage(530, "Login or password incorrect!")
 		}
 	} else {
 		// ???
@@ -170,12 +176,12 @@ func (h *Handler) HandlePASS(args []string) {
 	if h.User != "" {
 		password := args[0]
 		if p := users[h.User]; !h.Auth && password == p {
-			h.Message(230, "Password is OK. Working directory is %s", h.Path)
+			h.WriteMessage(230, "Password is OK. Working directory is %s", h.Path)
 		} else {
-			h.Message(530, "Password is incorrect!")
+			h.WriteMessage(530, "Password is incorrect!")
 		}
 	} else {
-		h.Message(530, "Please, specify login first!")
+		h.WriteMessage(530, "Please, specify login first!")
 	}
 }
 
@@ -190,14 +196,14 @@ func (h *Handler) HandleLIST(args []string) {
 	}
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
-		h.Message(550, "Unable to list directory: %s.", directory)
+		h.WriteMessage(550, "Unable to list directory: %s.", directory)
 		return
 	}
 
 	for _, file := range files {
-		h.SendLine(file.Name())
+		h.WriteLine(file.Name())
 	}
-	h.Message(226, "Done")
+	h.WriteMessage(226, "Done")
 }
 
 // HandlePWD provides current working directory.
@@ -205,15 +211,60 @@ func (h *Handler) HandlePWD(args []string) {
 	log.Printf("%s: HandlePWD", h.Clnt)
 	absPath, err := filepath.Abs(h.Path)
 	if err != nil {
-		h.Message(550, "Directory not found: '%s'", h.Path)
+		h.WriteMessage(550, "Directory not found: '%s'", h.Path)
 	}
-	h.Message(257, "Working directory is: '%s'", absPath)
+	h.WriteMessage(257, "Working directory is: '%s'", absPath)
 
+}
+
+// HandlePORT parses provided remote address for connection.
+func (h *Handler) HandlePORT(args []string) {
+	if len(args) != 1 {
+		h.WriteMessage(501, "Invalid PORT command")
+		return
+	}
+	var a, b, c, d byte
+	var p0, p1 int
+	_, err := fmt.Sscanf(args[0], "%d,%d,%d,%d,%d,%d", &a, &b, &c, &d, &p0, &p1)
+	if err != nil {
+		h.WriteMessage(501, "Unable to parse address.")
+		return
+	}
+	h.Port = fmt.Sprintf("%d.%d.%d.%d:%d", a, b, c, d, 256*p0+p1)
+	h.WriteMessage(200, "PORT command accepted.")
+}
+
+// HandleRETR transfers file to client.
+func (h *Handler) HandleRETR(args []string) {
+	if len(args) != 1 {
+		h.WriteMessage(501, "Invalid RETR command.")
+	}
+
+	filename := filepath.Join(h.Path, args[0])
+	h.WriteMessage(150, "Connecting to client")
+	conn, err := net.Dial("tcp", h.Port)
+	if err != nil {
+		h.WriteMessage(425, "Unable to connect to: %s", h.Port)
+		return
+	}
+	defer conn.Close()
+
+	fh, err := os.Open(filename)
+	if err != nil {
+		h.WriteMessage(550, "ERROR")
+	}
+	_, err = io.Copy(conn, fh)
+	if err != nil {
+		h.WriteMessage(550, "Unable to transfer file to: %s", h.Port)
+		return
+	}
+	h.WriteMessage(250, "Requested file %s is transferred to: %s",
+		filename, h.Port)
 }
 
 // HandleQUIT close user connection.
 func (h *Handler) HandleQUIT(args []string) {
 	log.Printf("%s: HandleQUIT", h.Clnt)
 	close(h.Quit)
-	h.Message(226, "Buy %s", h.User)
+	h.WriteMessage(226, "Buy %s", h.User)
 }
