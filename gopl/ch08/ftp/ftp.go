@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -126,8 +127,10 @@ func (h *Handler) handleCmd(cmd string, args []string) {
 		h.HandlePASS(args)
 	case "LIST", "NLST":
 		h.HandleLIST(args)
-	case "PWD":
+	case "PWD", "XPWD":
 		h.HandlePWD(args)
+	case "CWD":
+		h.HandleCWD(args)
 	case "QUIT":
 		h.HandleQUIT(args)
 	case "PORT":
@@ -232,6 +235,24 @@ func (h *Handler) HandlePORT(args []string) {
 	}
 	h.Port = fmt.Sprintf("%d.%d.%d.%d:%d", a, b, c, d, 256*p0+p1)
 	h.WriteMessage(200, "PORT command accepted.")
+}
+
+// HandleCWD changes current working directory.
+func (h *Handler) HandleCWD(args []string) {
+	log.Printf("%s: HandleCWD", h.Clnt)
+	if len(args) != 1 {
+		h.WriteMessage(501, "Invalid CWD command")
+		return
+	}
+	dirpath := path.Join(h.Path, args[0])
+
+	stat, err := os.Stat(dirpath)
+	if err != nil || !stat.IsDir() {
+		h.WriteMessage(550, "No such directory: %s", dirpath)
+		return
+	}
+	h.Path = dirpath
+	h.WriteMessage(250, "New working directory is: %", h.Path)
 }
 
 // HandleRETR transfers file to client.
