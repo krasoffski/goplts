@@ -14,12 +14,14 @@ func main() {
 	}
 	done := make(chan struct{})
 	go func() {
-		io.Copy(os.Stdout, conn)
+		mustCopy(os.Stdout, conn)
 		log.Println("done")
 		done <- struct{}{}
 	}()
 	mustCopy(conn, os.Stdin)
-	conn.Close()
+	if err := conn.(*net.TCPConn).CloseWrite(); err != nil {
+		log.Fatal(err)
+	}
 	<-done
 }
 
