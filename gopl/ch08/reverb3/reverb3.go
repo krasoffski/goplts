@@ -23,10 +23,10 @@ func handleConn(c net.Conn) {
 	wg := sync.WaitGroup{}
 	for input.Scan() {
 		wg.Add(1)
-		go func() {
+		go func(text string) {
 			defer wg.Done()
-			echo(c, input.Text(), 1*time.Second)
-		}()
+			echo(c, text, 1*time.Second)
+		}(input.Text())
 	}
 	wg.Wait()
 	if err := c.(*net.TCPConn).CloseWrite(); err != nil {
