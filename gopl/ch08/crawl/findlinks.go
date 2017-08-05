@@ -8,16 +8,29 @@ import (
 
 var tokens = make(chan struct{}, 20)
 
-func crawl(url string) []string {
-	fmt.Println(url)
-	tokens <- struct{}{}
-	list, err := Extract(url)
-	<-tokens
+type link struct {
+	url   string
+	depth int
+}
 
+func crawl(l link, maxDepth int) []link {
+	links := []link{}
+	if l.depth >= maxDepth {
+		return links
+	}
+	tokens <- struct{}{}
+	list, err := Extract(l.url)
+	<-tokens
 	if err != nil {
 		log.Print(err)
 	}
-	return list
+
+	depth := l.depth + 1
+	for _, url := range list {
+		links = append(links, link{url, depth})
+		fmt.Printf("[%d/%d]: %s\n", depth, maxDepth, url)
+	}
+	return links
 }
 
 func main() {
