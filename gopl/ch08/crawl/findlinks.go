@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"os"
 )
 
 var tokens = make(chan struct{}, 20)
@@ -34,22 +34,31 @@ func crawl(l link, maxDepth int) []link {
 }
 
 func main() {
-	worklist := make(chan []string)
+	maxDepth := flag.Int("depth", 3, "maximum depth")
+	flag.Parse()
+	worklist := make(chan []link)
 	var n int
 
 	n++
-	go func() { worklist <- os.Args[1:] }()
+	go func() {
+		args := flag.Args()
+		links := make([]link, 0, len(args))
+		for _, url := range args {
+			links = append(links, link{url, 0})
+		}
+		worklist <- links
+	}()
 
 	seen := make(map[string]bool)
 	for ; n > 0; n-- {
 		list := <-worklist
-		for _, link := range list {
-			if !seen[link] {
-				seen[link] = true
+		for _, lnk := range list {
+			if !seen[lnk.url] {
+				seen[lnk.url] = true
 				n++
-				go func(link string) {
-					worklist <- crawl(link)
-				}(link)
+				go func(l link) {
+					worklist <- crawl(l, *maxDepth)
+				}(lnk)
 			}
 		}
 	}
