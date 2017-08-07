@@ -19,14 +19,24 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 }
 
 func handleConn(c net.Conn) {
-	input := bufio.NewScanner(c)
 	wg := sync.WaitGroup{}
-	for input.Scan() {
+	ch := make(chan string)
+
+	input := bufio.NewScanner(c)
+
+	go func() {
+		defer close(ch)
+		for input.Scan() {
+			text := input.Text()
+			if text != "" {
+				ch <- text
+			}
+		}
+	}()
+
+	for msg := range ch {
 		wg.Add(1)
-		go func(text string) {
-			defer wg.Done()
-			echo(c, text, 1*time.Second)
-		}(input.Text())
+		go echo(c, msg, 1*time.Second)
 	}
 	wg.Wait()
 	if err := c.(*net.TCPConn).CloseWrite(); err != nil {
