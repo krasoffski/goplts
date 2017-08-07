@@ -27,11 +27,7 @@ func handleConn(c net.Conn) {
 	defer func() {
 		c.Close()
 		wg.Wait()
-		// if err := c.(*net.TCPConn).CloseWrite(); err != nil {
-		// 	log.Fatal(err)
-		// }
 		close(ch)
-		log.Println("done")
 	}()
 
 	wg.Add(1)
@@ -42,7 +38,7 @@ func handleConn(c net.Conn) {
 				ch <- text
 			}
 		}
-		log.Println("done fetch")
+		wg.Done()
 	}()
 
 	for {
@@ -52,15 +48,12 @@ func handleConn(c net.Conn) {
 			return
 		case msg := <-ch:
 			wg.Add(1)
-			go echo(c, msg, 1*time.Second)
+			go func(message string) {
+				echo(c, message, 1*time.Second)
+				wg.Done()
+			}(msg)
 		}
 	}
-
-	// for msg := range ch {
-	// 	wg.Add(1)
-	// 	go echo(c, msg, 1*time.Second)
-	// }
-
 }
 
 func main() {
