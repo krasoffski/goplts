@@ -24,24 +24,43 @@ func handleConn(c net.Conn) {
 
 	input := bufio.NewScanner(c)
 
+	defer func() {
+		c.Close()
+		wg.Wait()
+		// if err := c.(*net.TCPConn).CloseWrite(); err != nil {
+		// 	log.Fatal(err)
+		// }
+		close(ch)
+		log.Println("done")
+	}()
+
+	wg.Add(1)
 	go func() {
-		defer close(ch)
 		for input.Scan() {
 			text := input.Text()
 			if text != "" {
 				ch <- text
 			}
 		}
+		log.Println("done fetch")
 	}()
 
-	for msg := range ch {
-		wg.Add(1)
-		go echo(c, msg, 1*time.Second)
+	for {
+		select {
+		case <-time.After(10 * time.Second):
+			log.Println("disconnect after 10s of silence")
+			return
+		case msg := <-ch:
+			wg.Add(1)
+			go echo(c, msg, 1*time.Second)
+		}
 	}
-	wg.Wait()
-	if err := c.(*net.TCPConn).CloseWrite(); err != nil {
-		log.Fatal(err)
-	}
+
+	// for msg := range ch {
+	// 	wg.Add(1)
+	// 	go echo(c, msg, 1*time.Second)
+	// }
+
 }
 
 func main() {
