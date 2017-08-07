@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -18,7 +19,7 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 	fmt.Fprintln(c, "\t", strings.ToLower(shout))
 }
 
-func handleConn(c net.Conn) {
+func handleConn(c net.Conn, timeout time.Duration) {
 	wg := sync.WaitGroup{}
 	ch := make(chan string)
 
@@ -43,8 +44,9 @@ func handleConn(c net.Conn) {
 
 	for {
 		select {
-		case <-time.After(10 * time.Second):
-			log.Println("disconnect after 10s of silence")
+		case <-time.After(timeout):
+			log.Printf("disconnecting %s after %s of silence\n",
+				c.RemoteAddr().String(), timeout)
 			return
 		case msg := <-ch:
 			wg.Add(1)
@@ -57,6 +59,11 @@ func handleConn(c net.Conn) {
 }
 
 func main() {
+	timeout := flag.Duration("timeout",
+		time.Duration(10*time.Second),
+		"disconnect after seconds of silence, 10s by default")
+	flag.Parse()
+
 	l, err := net.Listen("tcp", "localhost:8000")
 	if err != nil {
 		log.Fatal(err)
@@ -67,6 +74,6 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		go handleConn(conn)
+		go handleConn(conn, *timeout)
 	}
 }
