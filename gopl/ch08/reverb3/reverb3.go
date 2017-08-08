@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -18,23 +19,51 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 	fmt.Fprintln(c, "\t", strings.ToLower(shout))
 }
 
-func handleConn(c net.Conn) {
-	input := bufio.NewScanner(c)
+func handleConn(c net.Conn, timeout time.Duration) {
 	wg := sync.WaitGroup{}
-	for input.Scan() {
-		wg.Add(1)
-		go func(text string) {
-			defer wg.Done()
-			echo(c, text, 1*time.Second)
-		}(input.Text())
-	}
-	wg.Wait()
-	if err := c.(*net.TCPConn).CloseWrite(); err != nil {
-		log.Fatal(err)
+	ch := make(chan string)
+
+	input := bufio.NewScanner(c)
+
+	defer func() {
+		c.Close()
+		wg.Wait()
+		close(ch)
+	}()
+
+	wg.Add(1)
+	go func() {
+		for input.Scan() {
+			text := input.Text()
+			if text != "" {
+				ch <- text
+			}
+		}
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case <-time.After(timeout):
+			log.Printf("disconnecting %s after %s of silence\n",
+				c.RemoteAddr().String(), timeout)
+			return
+		case msg := <-ch:
+			wg.Add(1)
+			go func(message string) {
+				echo(c, message, 1*time.Second)
+				wg.Done()
+			}(msg)
+		}
 	}
 }
 
 func main() {
+	timeout := flag.Duration("timeout",
+		time.Duration(10*time.Second),
+		"disconnect after seconds of silence, 10s by default")
+	flag.Parse()
+
 	l, err := net.Listen("tcp", "localhost:8000")
 	if err != nil {
 		log.Fatal(err)
@@ -45,6 +74,6 @@ func main() {
 			log.Print(err)
 			continue
 		}
-		go handleConn(conn)
+		go handleConn(conn, *timeout)
 	}
 }
