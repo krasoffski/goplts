@@ -14,6 +14,11 @@ var (
 	sema = make(chan struct{}, 20)
 )
 
+type dirSize struct {
+	path string
+	size uint64
+}
+
 func cancelled() bool {
 	select {
 	case <-done:
@@ -23,8 +28,8 @@ func cancelled() bool {
 	}
 }
 
-func printDiskUsage(nfiles, nbytes int64) {
-	fmt.Printf("%d file %.1f GB\n", nfiles, float64(nbytes)/1e9)
+func printDiskUsage(nbytes int64) {
+	fmt.Printf("%.1f GB\n", float64(nbytes)/1e9)
 }
 
 func dirents(dir string) []os.FileInfo {
@@ -91,7 +96,7 @@ func main() {
 	}()
 
 	tick := time.Tick(500 * time.Millisecond)
-	var nfiles, nbytes int64
+	var nbytes int64
 loop:
 	for {
 		select {
@@ -103,11 +108,10 @@ loop:
 			if !ok {
 				break loop
 			}
-			nfiles++
 			nbytes += size
 		case <-tick:
-			printDiskUsage(nfiles, nbytes)
+			printDiskUsage(nbytes)
 		}
 	}
-	printDiskUsage(nfiles, nbytes)
+	printDiskUsage(nbytes)
 }
