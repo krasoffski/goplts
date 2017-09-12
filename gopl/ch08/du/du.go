@@ -14,9 +14,9 @@ var (
 	sema = make(chan struct{}, 20)
 )
 
-type dirSize struct {
-	path string
-	size uint64
+type fileSize struct {
+	path, name string
+	size       int64
 }
 
 func cancelled() bool {
@@ -53,7 +53,7 @@ func dirents(dir string) []os.FileInfo {
 	return entries
 }
 
-func walkDir(dir string, wg *sync.WaitGroup, fileSizes chan<- int64) {
+func walkDir(dir string, wg *sync.WaitGroup, fileSizes chan<- *fileSize) {
 	defer wg.Done()
 
 	if cancelled() {
@@ -66,7 +66,10 @@ func walkDir(dir string, wg *sync.WaitGroup, fileSizes chan<- int64) {
 			subdir := filepath.Join(dir, entry.Name())
 			go walkDir(subdir, wg, fileSizes)
 		} else {
-			fileSizes <- entry.Size()
+			fileSizes <- &fileSize{
+				path: dir,
+				name: entry.Name(),
+				size: entry.Size()}
 		}
 	}
 }
@@ -84,7 +87,7 @@ func main() {
 		close(done)
 	}()
 
-	fileSizes := make(chan int64)
+	fileSizes := make(chan *fileSize)
 	var n sync.WaitGroup
 	for _, root := range roots {
 		n.Add(1)
@@ -104,11 +107,11 @@ loop:
 			for range fileSizes {
 			}
 			return
-		case size, ok := <-fileSizes:
+		case info, ok := <-fileSizes:
 			if !ok {
 				break loop
 			}
-			nbytes += size
+			nbytes += info.size
 		case <-tick:
 			printDiskUsage(nbytes)
 		}
