@@ -14,9 +14,9 @@ var (
 	sema = make(chan struct{}, 20)
 )
 
-type fileSize struct {
-	path, name string
-	size       int64
+type rootSize struct {
+	root string
+	size int64
 }
 
 func cancelled() bool {
@@ -28,8 +28,11 @@ func cancelled() bool {
 	}
 }
 
-func printDiskUsage(nbytes int64) {
-	fmt.Printf("%.1f GB\n", float64(nbytes)/1e9)
+func printDiskUsage(rootSizes map[string]int64) {
+	for r, s := range rootSizes {
+		fmt.Printf("[%s] %.1f GB\n", r, float64(s)/1e9)
+	}
+	fmt.Printf("\n\n")
 }
 
 func dirents(dir string) []os.FileInfo {
@@ -53,7 +56,7 @@ func dirents(dir string) []os.FileInfo {
 	return entries
 }
 
-func walkDir(dir string, wg *sync.WaitGroup, fileSizes chan<- *fileSize) {
+func walkDir(root, dir string, wg *sync.WaitGroup, rootSizes chan<- *rootSize) {
 	defer wg.Done()
 
 	if cancelled() {
@@ -64,11 +67,10 @@ func walkDir(dir string, wg *sync.WaitGroup, fileSizes chan<- *fileSize) {
 		if entry.IsDir() {
 			wg.Add(1)
 			subdir := filepath.Join(dir, entry.Name())
-			go walkDir(subdir, wg, fileSizes)
+			go walkDir(root, subdir, wg, rootSizes)
 		} else {
-			fileSizes <- &fileSize{
-				path: dir,
-				name: entry.Name(),
+			rootSizes <- &rootSize{
+				root: root,
 				size: entry.Size()}
 		}
 	}
@@ -87,34 +89,34 @@ func main() {
 		close(done)
 	}()
 
-	fileSizes := make(chan *fileSize)
+	rootSizes := make(chan *rootSize)
+	directories := make(map[string]int64)
 	var n sync.WaitGroup
 	for _, root := range roots {
 		n.Add(1)
-		go walkDir(root, &n, fileSizes)
+		go walkDir(root, root, &n, rootSizes)
 	}
 	go func() {
 		n.Wait()
-		close(fileSizes)
+		close(rootSizes)
 	}()
 
 	tick := time.Tick(500 * time.Millisecond)
-	var nbytes int64
 loop:
 	for {
 		select {
 		case <-done:
-			for range fileSizes {
+			for range rootSizes {
 			}
 			return
-		case info, ok := <-fileSizes:
+		case info, ok := <-rootSizes:
 			if !ok {
 				break loop
 			}
-			nbytes += info.size
+			directories[info.root] += info.size
 		case <-tick:
-			printDiskUsage(nbytes)
+			printDiskUsage(directories)
 		}
 	}
-	printDiskUsage(nbytes)
+	printDiskUsage(directories)
 }
