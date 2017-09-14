@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 )
 
 var tokens = make(chan struct{}, 20)
@@ -13,13 +15,13 @@ type link struct {
 	depth int
 }
 
-func crawl(l link, maxDepth int) []link {
+func crawl(ctx context.Context, l link, maxDepth int) []link {
 	links := []link{}
 	if l.depth >= maxDepth {
 		return links
 	}
 	tokens <- struct{}{}
-	list, err := Extract(l.url)
+	list, err := Extract(ctx, l.url)
 	<-tokens
 	if err != nil {
 		log.Print(err)
@@ -50,6 +52,13 @@ func main() {
 	}()
 
 	seen := make(map[string]bool)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		os.Stdin.Read(make([]byte, 1))
+		cancel()
+	}()
+
 	for ; n > 0; n-- {
 		list := <-worklist
 		for _, lnk := range list {
@@ -57,7 +66,7 @@ func main() {
 				seen[lnk.url] = true
 				n++
 				go func(l link) {
-					worklist <- crawl(l, *maxDepth)
+					worklist <- crawl(ctx, l, *maxDepth)
 				}(lnk)
 			}
 		}
