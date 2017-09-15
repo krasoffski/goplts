@@ -7,20 +7,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 )
 
-func fetch(url string) (int64, error) {
+func fetch(url string) (float64, error) {
+	start := time.Now()
 	resp, err := http.Get(url)
 	if err != nil {
 		return 0, err
 	}
 	defer resp.Body.Close()
 
-	n, err := io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(ioutil.Discard, resp.Body)
 	if err != nil {
 		return 0, err
 	}
-	return n, nil
+	return time.Since(start).Seconds(), nil
 }
 
 func main() {
@@ -32,12 +34,12 @@ func main() {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			n, err := fetch(url)
+			duration, err := fetch(url)
 			if err != nil {
-				fmt.Printf("%s: ERR\n", url)
+				fmt.Printf("[ ERROR ] %s: \n", url)
 				return
 			}
-			fmt.Printf("%s: %vb\n", url, n)
+			fmt.Printf("[%6.3fs] %s: \n", duration, url)
 		}(url)
 	}
 	wg.Wait()
