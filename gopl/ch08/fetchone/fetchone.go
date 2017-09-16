@@ -10,9 +10,11 @@ import (
 	"time"
 )
 
-func fetch(url string) (float64, error) {
+var timeout time.Duration
+
+func fetch(cln *http.Client, url string) (float64, error) {
 	start := time.Now()
-	resp, err := http.Get(url)
+	resp, err := cln.Get(url)
 	if err != nil {
 		return 0, err
 	}
@@ -26,20 +28,23 @@ func fetch(url string) (float64, error) {
 }
 
 func main() {
+	flag.DurationVar(&timeout, "timeout", 60*time.Second, "timeout for request")
 	flag.Parse()
+
 	urls := flag.Args()
 	var wg sync.WaitGroup
+	client := http.Client{Timeout: timeout}
 
 	for _, url := range urls {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			duration, err := fetch(url)
+			duration, err := fetch(&client, url)
 			if err != nil {
-				fmt.Printf("[ ERROR ] %s: \n", url)
+				fmt.Printf("[ ERROR ] <%s>, %s\n", url, err)
 				return
 			}
-			fmt.Printf("[%6.3fs] %s: \n", duration, url)
+			fmt.Printf("[%6.3fs] <%s>\n", duration, url)
 		}(url)
 	}
 	wg.Wait()
