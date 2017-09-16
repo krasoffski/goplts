@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -12,9 +13,18 @@ import (
 
 var timeout time.Duration
 
-func fetch(cln *http.Client, url string) (float64, error) {
+func fetch(ctx context.Context, cln *http.Client, url string) (float64, error) {
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	req = req.WithContext(ctx)
 	start := time.Now()
-	resp, err := cln.Get(url)
+
+	resp, err := cln.Do(req)
+
 	if err != nil {
 		return 0, err
 	}
@@ -34,18 +44,28 @@ func main() {
 	urls := flag.Args()
 	var wg sync.WaitGroup
 	client := http.Client{Timeout: timeout}
+	first := make(chan string)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for _, url := range urls {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			duration, err := fetch(&client, url)
+			duration, err := fetch(ctx, &client, url)
 			if err != nil {
-				fmt.Printf("[ ERROR ] <%s>, %s\n", url, err)
 				return
 			}
-			fmt.Printf("[%6.3fs] <%s>\n", duration, url)
+			msg := fmt.Sprintf("[%6.3fs] <%s>", duration, url)
+
+			select {
+			case first <- msg:
+				cancel()
+			case <-ctx.Done():
+				return
+			}
 		}(url)
 	}
-	wg.Wait()
+	fmt.Println(<-first)
+	wg.Wait() // for clean termination
 }
