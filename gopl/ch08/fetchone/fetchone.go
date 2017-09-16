@@ -42,9 +42,11 @@ func main() {
 	flag.Parse()
 
 	urls := flag.Args()
+
 	var wg sync.WaitGroup
 	client := http.Client{Timeout: timeout}
 	first := make(chan string)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -62,7 +64,7 @@ func main() {
 			case first <- msg:
 				cancel()
 			case <-ctx.Done():
-				return
+				return // not necessary but let keep for now
 			}
 		}(url)
 	}
