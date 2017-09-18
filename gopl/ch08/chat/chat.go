@@ -25,12 +25,15 @@ func broadcaster() {
 		select {
 		case msg := <-messages:
 			for cln := range clients {
-				cln.Chan <- msg
+				cln.Chan <- "\t" + msg
 			}
 		case cln := <-entering:
 			clients[cln] = true
 			online++
 			cln.Chan <- fmt.Sprintf("Online: %d", online)
+			for c := range clients {
+				cln.Chan <- "[ " + c.Name + " ]"
+			}
 
 		case cln := <-leaving:
 			online--
@@ -41,19 +44,25 @@ func broadcaster() {
 }
 
 func handleConn(conn net.Conn) {
+	var who string
+
 	ch := make(chan string)
 	go clientWriter(conn, ch)
 
-	who := conn.RemoteAddr().String()
-	ch <- "You are " + who
+	ch <- "Input your name: "
+
+	input := bufio.NewScanner(conn)
+	if input.Scan() {
+		who = input.Text() // no protection
+	}
+
 	messages <- who + " has arrived"
 	cln := client{Chan: ch, Name: who}
 	entering <- cln
 
-	input := bufio.NewScanner(conn)
 	for input.Scan() {
 		text := input.Text()
-		if text == "exit" {
+		if text == "!exit" {
 			break
 		}
 		messages <- who + ": " + text
