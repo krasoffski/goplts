@@ -79,8 +79,8 @@ func handleConn(conn net.Conn) {
 			log.Printf("message from %s", conn.RemoteAddr().String())
 			messages <- who + ": " + msg
 		case <-time.After(timeout):
-			wch <- fmt.Sprintf("Inactivity more than %s.\nDisconnecting!\n",
-				timeout)
+			// wch <- fmt.Sprintf("Inactivity more than %s.\nDisconnecting!\n",
+			// 	timeout)
 			log.Printf("inactivity for %s", conn.RemoteAddr().String())
 			return
 		}
