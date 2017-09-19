@@ -54,6 +54,8 @@ func handleConn(conn net.Conn) {
 	input := bufio.NewScanner(conn)
 	if input.Scan() {
 		who = input.Text() // no protection
+	} else {
+		who = conn.RemoteAddr().String()
 	}
 
 	messages <- who + " has arrived"
