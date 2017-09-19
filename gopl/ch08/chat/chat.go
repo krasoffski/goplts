@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"net"
+	"time"
 )
 
 type client struct {
@@ -16,6 +18,7 @@ var (
 	entering = make(chan client)
 	leaving  = make(chan client)
 	messages = make(chan string)
+	timeout  time.Duration
 )
 
 func broadcaster() {
@@ -44,34 +47,45 @@ func broadcaster() {
 }
 
 func handleConn(conn net.Conn) {
-	var who string
 
-	ch := make(chan string)
-	go clientWriter(conn, ch)
+	rch := make(chan string)
+	wch := make(chan string)
 
-	ch <- "Input your name: "
+	go clientReader(conn, rch)
+	go clientWriter(conn, wch)
 
-	input := bufio.NewScanner(conn)
-	if input.Scan() {
-		who = input.Text() // no protection
-	} else {
-		who = conn.RemoteAddr().String()
-	}
+	wch <- "Input your name: "
+	who := <-rch
 
 	messages <- who + " has arrived"
-	cln := client{Chan: ch, Name: who}
+	cln := client{Chan: wch, Name: who}
 	entering <- cln
 
-	for input.Scan() {
-		text := input.Text()
-		if text == "!exit" {
-			break
+	defer func() { // FIXME: don't like this solution
+		leaving <- cln
+		messages <- who + " has left"
+		close(rch)
+		conn.Close()
+	}()
+
+	for {
+		select {
+		case msg := <-rch:
+			messages <- who + ": " + msg
+		case <-time.After(timeout):
+			wch <- fmt.Sprintf("Inactivity more than %s.\nDisconnecting!\n",
+				timeout)
+			return
 		}
-		messages <- who + ": " + text
 	}
-	leaving <- cln
-	messages <- who + " has left"
-	conn.Close()
+}
+
+func clientReader(conn net.Conn, ch chan<- string) {
+	// FIXME: Ignoring potential errors from input.Err()
+	input := bufio.NewScanner(conn)
+	for input.Scan() {
+		ch <- input.Text()
+	}
 }
 
 func clientWriter(conn net.Conn, ch <-chan string) {
@@ -81,6 +95,9 @@ func clientWriter(conn net.Conn, ch <-chan string) {
 }
 
 func main() {
+	flag.DurationVar(&timeout, "timeout", 5*time.Minute, "inactivity timeout")
+	flag.Parse()
+
 	listener, err := net.Listen("tcp", "localhost:8000")
 	if err != nil {
 		log.Fatal(err)
