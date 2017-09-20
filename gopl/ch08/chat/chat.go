@@ -28,7 +28,10 @@ func broadcaster() {
 		select {
 		case msg := <-messages:
 			for cln := range clients {
-				cln.Chan <- "\t" + msg
+				select {
+				case cln.Chan <- "\t" + msg:
+				default: // skip slow client
+				}
 			}
 		case cln := <-entering:
 			clients[cln] = true
@@ -47,7 +50,7 @@ func broadcaster() {
 
 func handleConn(conn net.Conn) {
 	rch := make(chan string)
-	wch := make(chan string)
+	wch := make(chan string, 10)
 
 	go clientReader(conn, rch)
 	go clientWriter(conn, wch)
@@ -59,22 +62,20 @@ func handleConn(conn net.Conn) {
 	cln := client{Chan: wch, Name: who}
 	entering <- cln
 
-	defer func() { // FIXME: don't like this solution
-		leaving <- cln
-		messages <- who + " has left"
-		close(rch)
-		conn.Close()
-	}()
-
+Loop:
 	for {
 		select {
 		case msg := <-rch:
 			messages <- who + ": " + msg
 		case <-time.After(timeout):
 			// wch <- fmt.Sprintf("Inactivity more than %s!", timeout)
-			return
+			break Loop
 		}
 	}
+	leaving <- cln
+	messages <- who + " has left"
+	close(rch)
+	conn.Close()
 }
 
 func clientReader(conn net.Conn, ch chan<- string) {
