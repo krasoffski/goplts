@@ -18,7 +18,6 @@ var (
 	entering = make(chan client)
 	leaving  = make(chan client)
 	messages = make(chan string)
-	semafore = make(chan struct{}, 5)
 	timeout  time.Duration
 )
 
@@ -37,14 +36,10 @@ func broadcaster() {
 		case cln := <-entering:
 			clients[cln] = true
 			online++
-			go func() { // FIXME: need QA this
-				semafore <- struct{}{}
-				cln.Chan <- fmt.Sprintf("Online: %d", online)
-				for c := range clients {
-					cln.Chan <- "[ " + c.Name + " ]"
-				}
-				<-semafore
-			}()
+			cln.Chan <- fmt.Sprintf("Online: %d", online)
+			for c := range clients {
+				cln.Chan <- "[ " + c.Name + " ]"
+			}
 		case cln := <-leaving:
 			online--
 			delete(clients, cln)
