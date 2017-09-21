@@ -18,7 +18,9 @@ var (
 	entering = make(chan client)
 	leaving  = make(chan client)
 	messages = make(chan string)
-	timeout  time.Duration
+
+	addr, port string
+	timeout    time.Duration
 )
 
 func broadcaster() {
@@ -55,8 +57,17 @@ func handleConn(conn net.Conn) {
 	go clientReader(conn, rch)
 	go clientWriter(conn, wch)
 
+	var who string
 	wch <- "Input your name: "
-	who := <-rch
+	select {
+	case name := <-rch:
+		who = name
+	case <-time.After(timeout):
+		conn.Close()
+		close(rch)
+		close(wch)
+		return
+	}
 
 	messages <- who + " has arrived"
 	cln := client{Chan: wch, Name: who}
@@ -79,7 +90,7 @@ Loop:
 }
 
 func clientReader(conn net.Conn, ch chan<- string) {
-	// FIXME: Ignoring potential errors from input.Err()
+	// NOTE: Ignoring potential errors from input.Err()
 	input := bufio.NewScanner(conn)
 	for input.Scan() {
 		ch <- input.Text()
@@ -94,9 +105,12 @@ func clientWriter(conn net.Conn, ch <-chan string) {
 
 func main() {
 	flag.DurationVar(&timeout, "timeout", 5*time.Minute, "inactivity timeout")
+	flag.StringVar(&addr, "addr", "localhost", "address to listen on")
+	flag.StringVar(&port, "port", "8000", "port to listen on")
+
 	flag.Parse()
 
-	listener, err := net.Listen("tcp", "localhost:8000")
+	listener, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
 		log.Fatal(err)
 	}
