@@ -40,7 +40,7 @@ type result struct {
 }
 
 func main() {
-	names := []string{"name1", "Yu", "name3", "Yury", "name3", "Yur"}
+	names := []string{"name1", "Yu", "name3", "Yury", "name3", "Yur", ""}
 	searchKey := "Yury"
 
 	var results []result
