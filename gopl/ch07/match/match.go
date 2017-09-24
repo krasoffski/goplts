@@ -20,14 +20,14 @@ func cmp(word, key string) int {
 		return minLen
 	}
 
-	var maxIndex int
+	var matchLen int
 	for i := 0; i < minLen; i++ {
 		if word[i] != key[i] {
 			break
 		}
-		maxIndex++
+		matchLen++
 	}
-	return maxIndex
+	return matchLen
 }
 
 type result struct {
