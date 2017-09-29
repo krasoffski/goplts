@@ -1,21 +1,29 @@
 package bank
 
-import "sync"
-
 var (
-	mu      sync.Mutex
-	balance int
+	deposits = make(chan int)
+	balances = make(chan int)
 )
 
 func Deposit(amount int) {
-	mu.Lock()
-	balance += amount
-	mu.Unlock()
+	deposits <- amount
 }
 
 func Balance() int {
-	mu.Lock()
-	b := balance
-	mu.Unlock()
-	return b
+	return <-balances
+}
+
+func teller() {
+	var balance int
+	for {
+		select {
+		case amount := <-deposits:
+			balance += amount
+		case balances <- balance:
+		}
+	}
+}
+
+func init() {
+	go teller()
 }
