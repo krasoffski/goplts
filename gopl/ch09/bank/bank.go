@@ -1,5 +1,6 @@
 package bank
 
+// Withdrawal is structure for taking off amount from bank.
 type Withdrawal struct {
 	amount  int
 	succeed chan bool
@@ -11,14 +12,17 @@ var (
 	withdrawals = make(chan Withdrawal)
 )
 
+// Deposit adds amount to bank.
 func Deposit(amount int) {
 	deposits <- amount
 }
 
+// Balance returns amount in the bank.
 func Balance() int {
 	return <-balances
 }
 
+// Withdraw takes off amount from the bank.
 func Withdraw(amount int) bool {
 	ch := make(chan bool)
 	withdrawals <- Withdrawal{amount, ch}
