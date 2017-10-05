@@ -5,16 +5,15 @@ import (
 	"sort"
 )
 
-func cmp(word, key string) int {
-	wordLen := len(word)
-	keyLen := len(key)
-
-	var minLen int
-	if wordLen <= keyLen {
-		minLen = wordLen
-	} else {
-		minLen = keyLen
+func min(x, y int) int {
+	if x < y {
+		return x
 	}
+	return y
+}
+
+func cmp(word, key string) int {
+	minLen := min(len(word), len(key))
 
 	if word[:minLen] == key[:minLen] {
 		return minLen
