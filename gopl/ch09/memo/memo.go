@@ -18,16 +18,20 @@ type request struct {
 	response chan<- result
 }
 
+// Memo implements simple memoization of a function.
 type Memo struct {
 	requests chan request
 }
 
+// New initialized memoizarion structure.
 func New(f Func) *Memo {
 	memo := &Memo{requests: make(chan request)}
 	go memo.server(f)
 	return memo
 }
 
+// Get calculates new result for Func or returns one
+// from the cache.
 func (m *Memo) Get(key string) (interface{}, error) {
 	response := make(chan result)
 	m.requests <- request{key, response}

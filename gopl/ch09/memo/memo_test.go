@@ -30,6 +30,7 @@ func newReader(r io.Reader, bps int) io.Reader {
 	return slowReader{r: r, delay: delay}
 }
 
+// httpGetBodyMock emulates time-bound read functions.
 func httpGetBodyMock(str string) (interface{}, error) {
 	s := strings.NewReader(str)
 	r := newReader(s, BPS)
