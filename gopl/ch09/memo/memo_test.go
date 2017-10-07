@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -33,6 +34,15 @@ func httpGetBodyMock(str string) (interface{}, error) {
 	s := strings.NewReader(str)
 	r := newReader(s, BPS)
 	return ioutil.ReadAll(r)
+}
+
+func httpGetBody(url string) (interface{}, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return ioutil.ReadAll(resp.Body)
 }
 
 var HTTPGetBody = httpGetBodyMock
