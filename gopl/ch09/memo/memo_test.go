@@ -11,13 +11,16 @@ import (
 	"time"
 )
 
+// BPS is emulation download speed for url
+const BPS = 10
+
 type slowReader struct {
 	delay time.Duration
 	r     io.Reader
 }
 
 func (sr slowReader) Read(p []byte) (int, error) {
-	// time.Sleep(sr.delay)
+	time.Sleep(sr.delay)
 	return sr.r.Read(p[:1])
 }
 
@@ -26,13 +29,13 @@ func newReader(r io.Reader, bps int) io.Reader {
 	return slowReader{r: r, delay: delay}
 }
 
-func getSlowString(str string) (interface{}, error) {
+func httpGetBodyMock(str string) (interface{}, error) {
 	s := strings.NewReader(str)
-	r := newReader(s, 10)
+	r := newReader(s, BPS)
 	return ioutil.ReadAll(r)
 }
 
-var GetSlowString = getSlowString
+var HTTPGetBody = httpGetBodyMock
 
 func incomingURLs() <-chan string {
 	ch := make(chan string)
@@ -91,11 +94,11 @@ func Concurrent(t *testing.T, m M) {
 }
 
 func TestSequential(t *testing.T) {
-	m := New(getSlowString)
+	m := New(httpGetBodyMock)
 	Sequential(t, m)
 }
 
 func TestConcurrent(t *testing.T) {
-	m := New(getSlowString)
+	m := New(httpGetBodyMock)
 	Concurrent(t, m)
 }

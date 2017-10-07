@@ -1,5 +1,6 @@
 package memo
 
+// Func is the type of the function to memoize.
 type Func func(key string) (interface{}, error)
 
 type result struct {
@@ -10,16 +11,6 @@ type result struct {
 type entry struct {
 	res   result
 	ready chan struct{}
-}
-
-func (e *entry) call(f Func, key string) {
-	e.res.value, e.res.err = f(key)
-	close(e.ready)
-}
-
-func (e *entry) deliver(response chan<- result) {
-	<-e.ready
-	response <- e.res
 }
 
 type request struct {
@@ -44,6 +35,9 @@ func (m *Memo) Get(key string) (interface{}, error) {
 	return res.value, res.err
 }
 
+// Close closes internal channel for requests.
+func (m *Memo) Close() { close(m.requests) }
+
 func (m *Memo) server(f Func) {
 	cache := make(map[string]*entry)
 	for req := range m.requests {
@@ -53,5 +47,16 @@ func (m *Memo) server(f Func) {
 			cache[req.key] = e
 			go e.call(f, req.key)
 		}
+		go e.deliver(req.response)
 	}
+}
+
+func (e *entry) call(f Func, key string) {
+	e.res.value, e.res.err = f(key)
+	close(e.ready)
+}
+
+func (e *entry) deliver(response chan<- result) {
+	<-e.ready
+	response <- e.res
 }
