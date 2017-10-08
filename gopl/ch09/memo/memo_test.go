@@ -31,13 +31,13 @@ func newReader(r io.Reader, bps int) io.Reader {
 }
 
 // httpGetBodyMock emulates time-bound read functions.
-func httpGetBodyMock(str string) (interface{}, error) {
+func httpGetBodyMock(str string, done <-chan struct{}) (interface{}, error) {
 	s := strings.NewReader(str)
 	r := newReader(s, BPS)
 	return ioutil.ReadAll(r)
 }
 
-func httpGetBody(url string) (interface{}, error) {
+func httpGetBody(url string, done <-chan struct{}) (interface{}, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -69,13 +69,13 @@ func incomingURLs() <-chan string {
 }
 
 type M interface {
-	Get(key string) (interface{}, error)
+	Get(key string, done <-chan struct{}) (interface{}, error)
 }
 
 func Sequential(t *testing.T, m M) {
 	for url := range incomingURLs() {
 		start := time.Now()
-		value, err := m.Get(url)
+		value, err := m.Get(url, nil)
 		if err != nil {
 			log.Print(err)
 			continue
@@ -92,7 +92,7 @@ func Concurrent(t *testing.T, m M) {
 		go func(url string) {
 			defer n.Done()
 			start := time.Now()
-			value, err := m.Get(url)
+			value, err := m.Get(url, nil)
 			if err != nil {
 				log.Print(err)
 				return
