@@ -32,28 +32,28 @@ func newReader(r io.Reader, bps int) io.Reader {
 
 // httpGetBodyMock emulates time-bound read functions.
 func httpGetBodyMock(str string, done <-chan struct{}) (interface{}, error) {
-	s := strings.NewReader(str)
-	r := newReader(s, BPS)
-	b := make([]byte, 0)
-	x := make([]byte, 1)
+	slr := newReader(strings.NewReader(str), BPS) // slow reader from string
+	buf := make([]byte, 1)                        // one byte buffer
+	dst := make([]byte, 0)                        // full content from reader
 
 Loop:
 	for {
 		select {
 		case <-done:
-			return b, fmt.Errorf("canselation error")
+			return dst, fmt.Errorf("canselation error")
 		default:
-			n, err := r.Read(x)
+			n, err := slr.Read(buf)
 			if err != nil && err != io.EOF {
-				return b, err
+				return dst, err
 			}
+			// NOTE: n == 0 does not indicate io.EOF, need more checks here.
 			if n == 0 {
 				break Loop
 			}
-			b = append(b, x...)
+			dst = append(dst, buf...)
 		}
 	}
-	return b, nil
+	return dst, nil
 }
 
 func httpGetBody(url string, done <-chan struct{}) (interface{}, error) {
