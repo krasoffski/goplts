@@ -40,7 +40,7 @@ Loop:
 	for {
 		select {
 		case <-done:
-			return dst, fmt.Errorf("canselation error")
+			return dst, fmt.Errorf("cancellation error")
 		default:
 			n, err := slr.Read(buf)
 			if err != nil && err != io.EOF {
@@ -106,12 +106,17 @@ func Sequential(t *testing.T, m M) {
 
 func Concurrent(t *testing.T, m M) {
 	var n sync.WaitGroup
+	done := make(chan struct{})
+	go func() {
+		<-time.After(time.Millisecond)
+		close(done)
+	}()
 	for url := range incomingURLs() {
 		n.Add(1)
 		go func(url string) {
 			defer n.Done()
 			start := time.Now()
-			value, err := m.Get(url, nil)
+			value, err := m.Get(url, done)
 			if err != nil {
 				log.Print(err)
 				return
