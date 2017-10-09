@@ -1,6 +1,7 @@
 package memo
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,45 +13,44 @@ import (
 	"time"
 )
 
-// BPS is emulation download speed for url
+// BPS is emulation download speed for url (bytes per second)
 const BPS = 10
 
 type slowReader struct {
-	delay time.Duration
-	r     io.Reader
+	d time.Duration
+	r io.Reader
 }
 
 func (sr slowReader) Read(p []byte) (int, error) {
-	time.Sleep(sr.delay)
+	time.Sleep(sr.d)
 	return sr.r.Read(p[:1])
 }
 
 func newReader(r io.Reader, bps int) io.Reader {
 	delay := time.Second / time.Duration(bps)
-	return slowReader{r: r, delay: delay}
+	return slowReader{r: r, d: delay}
 }
 
 // httpGetBodyMock emulates time-bound read functions.
 func httpGetBodyMock(str string, done <-chan struct{}) (interface{}, error) {
 	slr := newReader(strings.NewReader(str), BPS) // slow reader from string
-	buf := make([]byte, 1)                        // one byte buffer
-	dst := make([]byte, 0)                        // full content from reader
-
+	buf := bufio.NewReader(slr)
+	dst := make([]byte, 0) // full content from reader
 Loop:
 	for {
 		select {
 		case <-done:
-			return dst, fmt.Errorf("cancellation error")
+			return nil, fmt.Errorf("cancellation error")
 		default:
-			n, err := slr.Read(buf)
-			if err != nil && err != io.EOF {
-				return dst, err
-			}
-			// NOTE: n == 0 does not indicate io.EOF, need more checks here.
-			if n == 0 {
+			n, err := buf.ReadByte()
+			if err == io.EOF {
 				break Loop
 			}
-			dst = append(dst, buf...)
+			if err != nil {
+				return nil, err
+			}
+			// dst.WriteByte(n)
+			dst = append(dst, n)
 		}
 	}
 	return dst, nil
