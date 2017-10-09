@@ -34,7 +34,26 @@ func newReader(r io.Reader, bps int) io.Reader {
 func httpGetBodyMock(str string, done <-chan struct{}) (interface{}, error) {
 	s := strings.NewReader(str)
 	r := newReader(s, BPS)
-	return ioutil.ReadAll(r)
+	b := make([]byte, 0)
+	x := make([]byte, 1)
+
+Loop:
+	for {
+		select {
+		case <-done:
+			return b, fmt.Errorf("canselation error")
+		default:
+			n, err := r.Read(x)
+			if err != nil && err != io.EOF {
+				return b, err
+			}
+			if n == 0 {
+				break Loop
+			}
+			b = append(b, x...)
+		}
+	}
+	return b, nil
 }
 
 func httpGetBody(url string, done <-chan struct{}) (interface{}, error) {
