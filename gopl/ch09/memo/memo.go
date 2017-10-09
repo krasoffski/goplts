@@ -24,7 +24,7 @@ type Memo struct {
 	requests, cancels chan request
 }
 
-// New initialized memoizarion structure.
+// New initialized memoizarion structure. Clients must call Close when done.
 func New(f Func) *Memo {
 	memo := &Memo{
 		requests: make(chan request),
@@ -61,14 +61,34 @@ func (m *Memo) Close() {
 
 func (m *Memo) server(f Func) {
 	cache := make(map[string]*entry)
-	for req := range m.requests {
-		e := cache[req.key]
-		if e == nil {
-			e = &entry{ready: make(chan struct{})}
-			cache[req.key] = e
-			go e.call(f, req.key, req.done)
+
+	clean := func() {
+		for {
+			select {
+			case req := <-m.cancels:
+				delete(cache, req.key)
+			default:
+				return
+			}
 		}
-		go e.deliver(req.response)
+	}
+
+	for {
+		// Perform all cancellation requests before start execution.
+		clean()
+
+		select {
+		case req := <-m.cancels:
+			delete(cache, req.key)
+		case req := <-m.requests:
+			e := cache[req.key]
+			if e == nil {
+				e = &entry{ready: make(chan struct{})}
+				cache[req.key] = e
+				go e.call(f, req.key, req.done)
+			}
+			go e.deliver(req.response)
+		}
 	}
 }
 
