@@ -62,7 +62,8 @@ func (m *Memo) Close() {
 func (m *Memo) server(f Func) {
 	cache := make(map[string]*entry)
 
-	clean := func() {
+	// Don't create new method for this to do not pass cache outside server.
+	revokeRequests := func() {
 		for {
 			select {
 			case req := <-m.cancels:
@@ -75,7 +76,7 @@ func (m *Memo) server(f Func) {
 
 	for {
 		// Perform all cancellation requests before start execution.
-		clean()
+		revokeRequests()
 
 		select {
 		case req := <-m.cancels:
