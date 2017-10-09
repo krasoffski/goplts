@@ -105,13 +105,13 @@ func Concurrent(t *testing.T, m M) {
 }
 
 func TestSequential(t *testing.T) {
-	m := New(httpGetBodyMock)
+	m := New(HTTPGetBody)
 	defer m.Close()
 	Sequential(t, m)
 }
 
 func TestConcurrent(t *testing.T) {
-	m := New(httpGetBodyMock)
+	m := New(HTTPGetBody)
 	defer m.Close()
 	Concurrent(t, m)
 }
