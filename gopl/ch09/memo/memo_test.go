@@ -2,6 +2,7 @@ package memo
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,7 +15,7 @@ import (
 )
 
 // BPS is emulation download speed for url (bytes per second)
-const BPS = 10
+const BPS = 100
 
 type slowReader struct {
 	d time.Duration
@@ -31,6 +32,8 @@ func newReader(r io.Reader, bps int) io.Reader {
 	return slowReader{r: r, d: delay}
 }
 
+var errCancel = errors.New("cancellation error")
+
 // httpGetBodyMock emulates time-bound read functions.
 func httpGetBodyMock(str string, done <-chan struct{}) (interface{}, error) {
 	slr := newReader(strings.NewReader(str), BPS) // slow reader from string
@@ -40,7 +43,7 @@ Loop:
 	for {
 		select {
 		case <-done:
-			return nil, fmt.Errorf("cancellation error")
+			return nil, errCancel
 		default:
 			n, err := buf.ReadByte()
 			if err == io.EOF {
@@ -106,17 +109,12 @@ func Sequential(t *testing.T, m M) {
 
 func Concurrent(t *testing.T, m M) {
 	var n sync.WaitGroup
-	done := make(chan struct{})
-	go func() {
-		<-time.After(time.Millisecond)
-		close(done)
-	}()
 	for url := range incomingURLs() {
 		n.Add(1)
 		go func(url string) {
 			defer n.Done()
 			start := time.Now()
-			value, err := m.Get(url, done)
+			value, err := m.Get(url, nil)
 			if err != nil {
 				log.Print(err)
 				return
@@ -126,6 +124,38 @@ func Concurrent(t *testing.T, m M) {
 		}(url)
 	}
 	n.Wait()
+}
+
+func Cancellation(t *testing.T, m M) {
+	tests := []struct {
+		url       string
+		timeout   time.Duration
+		cancelled bool
+	}{
+		{"https://golang.org", 300 * time.Millisecond, false},
+		{"https://godoc.org", 300 * time.Millisecond, false},
+		{"https://play.golang.org", 10 * time.Millisecond, true},
+		{"http://gopl.io", 300 * time.Millisecond, false},
+		{"https://golang.org", 300 * time.Millisecond, false},
+		{"https://godoc.org", 300 * time.Millisecond, false},
+		{"https://play.golang.org", 300 * time.Millisecond, false},
+		{"http://gopl.io", 300 * time.Millisecond, false},
+	}
+
+	for i, test := range tests {
+		cancel := make(chan struct{})
+		start := time.Now()
+		go func(cancel chan struct{}) {
+			<-time.After(test.timeout)
+			close(cancel)
+		}(cancel)
+		_, err := m.Get(test.url, cancel)
+		fmt.Printf("i: %d, %s, %s\n", i, test.url, time.Since(start))
+		if err == errCancel && !test.cancelled || test.cancelled && err != errCancel {
+			t.Errorf("i:%d, url: '%s', timeout: %v, cancelled: %v",
+				i, test.url, test.timeout, test.cancelled)
+		}
+	}
 }
 
 func TestSequential(t *testing.T) {
@@ -138,4 +168,10 @@ func TestConcurrent(t *testing.T) {
 	m := New(HTTPGetBody)
 	defer m.Close()
 	Concurrent(t, m)
+}
+
+func TestCancellation(t *testing.T) {
+	m := New(HTTPGetBody)
+	defer m.Close()
+	Cancellation(t, m)
 }
