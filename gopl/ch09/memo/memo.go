@@ -19,7 +19,7 @@ type request struct {
 	done     <-chan struct{} // cancellation channel
 }
 
-// Memo implements simple memoization of a function.
+// Memo implements simple memorization of a function.
 type Memo struct {
 	requests, cancels chan request
 }
