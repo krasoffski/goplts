@@ -8,7 +8,7 @@ import (
 
 func main() {
 	pipes := flag.Int("pipes", 1000000, "number of sequential pipes")
-	verbose := flag.Bool("verbose", true, "interactive print number of pipes")
+	verbose := flag.Bool("verbose", true, "interactive printing number of pipes")
 	flag.Parse()
 
 	ch := make(chan struct{})
