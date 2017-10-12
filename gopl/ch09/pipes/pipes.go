@@ -8,11 +8,15 @@ import (
 
 func main() {
 	pipes := flag.Int("pipes", 1000000, "number of sequential pipes")
-	verbose := flag.Bool("verbose", true, "interactive printing number of pipes")
+	verbose := flag.Bool("verbose", false,
+		"interactive printing number of created pipes")
 	flag.Parse()
 
 	ch := make(chan struct{})
 	in := ch
+	var start time.Time
+
+	start = time.Now()
 
 	for i := 1; i <= *pipes; i++ {
 		out := make(chan struct{})
@@ -26,8 +30,13 @@ func main() {
 			fmt.Printf("\r[%10d] ", i)
 		}
 	}
-	start := time.Now()
+	if *verbose {
+		fmt.Println()
+	}
+	fmt.Printf("Goroutines created in %v\n", time.Since(start))
+
+	start = time.Now()
 	ch <- struct{}{}
 	<-in
-	fmt.Printf("\nDone in %v\n", time.Since(start))
+	fmt.Printf("Message transmitted in %v\n", time.Since(start))
 }
