@@ -9,6 +9,7 @@ func echo(in <-chan int, out chan<- int) {
 	ticker := time.NewTicker(time.Second)
 	var i int
 	for {
+		// NOTE: add solution without select
 		select {
 		case <-ticker.C:
 			fmt.Println(i)
