@@ -3,19 +3,21 @@ package main
 import (
 	"fmt"
 	"image"
+	_ "image/gif"
 	"image/jpeg"
+	_ "image/png"
 	"io"
 	"os"
 )
 
 func main() {
-	if err := toJPEG(os.Stdin, os.Stdout); err != nil {
+	if err := covert(os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "imgc: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func toJPEG(in io.Reader, out io.Writer) error {
+func covert(in io.Reader, out io.Writer) error {
 	img, kind, err := image.Decode(in)
 	if err != nil {
 		return err
