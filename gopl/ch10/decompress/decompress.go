@@ -17,7 +17,7 @@ type Signature struct {
 }
 
 // Decompressor creates a reader form the file parameter
-type Decompressor func(*os.File) ([]io.Reader, error) // not memory efficient
+type Decompressor func(*os.File) ([]io.ReadCloser, error) // not memory efficient
 
 type format struct {
 	signature    Signature
@@ -61,7 +61,7 @@ func RegisterFormat(magic string, offset int, d Decompressor) {
 }
 
 // NewReader creates a decompressing reader
-func NewReader(file *os.File) ([]io.Reader, error) {
+func NewReader(file *os.File) ([]io.ReadCloser, error) {
 	f, err := sniff(file)
 	if err != nil {
 		return nil, err
