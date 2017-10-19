@@ -26,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	for _, r := range fileReaders {
 		io.Copy(os.Stdout, r)
 		r.Close()

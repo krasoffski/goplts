@@ -2,6 +2,7 @@ package zip
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"os"
 
@@ -15,18 +16,21 @@ func NewReader(f *os.File) ([]io.ReadCloser, error) {
 		return nil, err
 	}
 	zr, err := zip.NewReader(f, stat.Size())
-	zipFiles := make([]io.ReadCloser, len(zr.File))
-	for _, zipFile := range zr.File {
-		fileReader, err := zipFile.Open()
+	if err != nil {
+		return nil, err
+	}
+	readers := make([]io.ReadCloser, 0, len(zr.File))
+	for _, zf := range zr.File {
+		fmt.Fprintln(os.Stderr, zf.Name)
+		r, err := zf.Open() // zip internal file reader
 		if err != nil {
 			return nil, err
 		}
-		zipFiles = append(zipFiles, fileReader)
+		readers = append(readers, r)
 	}
-	return zipFiles, nil
+	return readers, nil
 }
 
 func init() {
 	decompress.RegisterFormat("PK", 0, NewReader)
-	// decompress.RegisterFormat(archive.Magic{"PK", 0}, NewReader)
 }

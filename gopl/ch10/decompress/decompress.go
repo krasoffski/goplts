@@ -51,7 +51,7 @@ func sniff(r io.Reader) (*format, error) {
 	return nil, ErrFormat
 }
 
-// RegisterFormat registers decompressor for the magic number
+// RegisterFormat registers decompressor for the magic number.
 func RegisterFormat(magic string, offset int, d Decompressor) {
 	f := format{
 		signature:    Signature{Magic: magic, Offset: offset},
