@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,12 +13,16 @@ import (
 )
 
 func main() {
-	path := flag.String("path", "", "path for archive")
+	src := flag.String("src", "", "path for archive")
+	dst := flag.String("dst", "./", "destination path, empty string '' is analogue of /dev/null")
+	verbose := flag.Bool("verbose", true, "verbose output")
 	flag.Parse()
-	if *path == "" {
+
+	if *src == "" {
 		log.Fatal("unable to open file")
 	}
-	f, err := os.Open(*path)
+
+	f, err := os.Open(*src)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,11 +33,19 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, e := range entries {
+		// path := filepath.Join(*dst, e.Name)
+		if *verbose {
+			fmt.Printf("[%5v] %s\n", e.IsDir, e.Name)
+		}
+
 		if e.IsDir {
 			e.ReaderCloser.Close()
 			continue
 		}
-		io.Copy(ioutil.Discard, e.ReaderCloser)
+
+		if *dst == "" {
+			io.Copy(ioutil.Discard, e.ReaderCloser)
+		}
 		e.ReaderCloser.Close()
 	}
 }
