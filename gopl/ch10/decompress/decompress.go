@@ -51,11 +51,12 @@ func sniff(r io.Reader) (*format, error) {
 	return nil, ErrFormat
 }
 
-// Entry represents compressed file within archive.
+// Entry represents basic compressed file within archive.
 type Entry struct {
 	ReaderCloser io.ReadCloser
 	Name         string
 	IsDir        bool
+	Mode         os.FileMode
 }
 
 // RegisterFormat registers decompressor for the magic number.

@@ -30,6 +30,7 @@ func NewReader(f *os.File) ([]*decompress.Entry, error) {
 			ReaderCloser: rc,
 			Name:         zf.Name,
 			IsDir:        zf.FileInfo().IsDir(),
+			Mode:         zf.Mode(),
 		}
 		entries = append(entries, &e)
 	}
