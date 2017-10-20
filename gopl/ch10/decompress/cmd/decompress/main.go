@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -22,12 +23,16 @@ func main() {
 	}
 	defer f.Close()
 
-	fileReaders, err := decompress.NewReader(f)
+	entries, err := decompress.NewReader(f)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, r := range fileReaders {
-		io.Copy(os.Stdout, r)
-		r.Close()
+	for _, e := range entries {
+		if e.IsDir {
+			e.ReaderCloser.Close()
+			continue
+		}
+		io.Copy(ioutil.Discard, e.ReaderCloser)
+		e.ReaderCloser.Close()
 	}
 }

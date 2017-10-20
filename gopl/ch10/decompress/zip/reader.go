@@ -2,15 +2,13 @@ package zip
 
 import (
 	"archive/zip"
-	"fmt"
-	"io"
 	"os"
 
 	"github.com/krasoffski/goplts/gopl/ch10/decompress"
 )
 
 // NewReader create a zip reader from the File.
-func NewReader(f *os.File) ([]io.ReadCloser, error) {
+func NewReader(f *os.File) ([]*decompress.Entry, error) {
 	stat, err := f.Stat()
 	if err != nil {
 		return nil, err
@@ -19,16 +17,23 @@ func NewReader(f *os.File) ([]io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	readers := make([]io.ReadCloser, 0, len(zr.File))
+	// storing compressed file readers in the slice of interfaces
+	entries := make([]*decompress.Entry, 0, len(zr.File))
+	// zip file contains a number of individual files/readers
 	for _, zf := range zr.File {
-		fmt.Fprintln(os.Stderr, zf.Name)
-		r, err := zf.Open() // zip internal file reader
+		rc, err := zf.Open() // entry is represent compressed file
 		if err != nil {
 			return nil, err
 		}
-		readers = append(readers, r)
+		// NOTE: need verify ability to skip reader creation for directories.
+		e := decompress.Entry{
+			ReaderCloser: rc,
+			Name:         zf.Name,
+			IsDir:        zf.FileInfo().IsDir(),
+		}
+		entries = append(entries, &e)
 	}
-	return readers, nil
+	return entries, nil
 }
 
 func init() {
