@@ -41,6 +41,11 @@ func main() {
 		}
 
 		if e.IsDir {
+			// NOTE: think how to beautify such approach.
+			if *dst == "" {
+				continue
+			}
+
 			err := os.MkdirAll(path, e.Mode)
 			if err != nil {
 				log.Fatal(err)
