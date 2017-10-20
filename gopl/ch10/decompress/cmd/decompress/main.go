@@ -54,13 +54,15 @@ func main() {
 			continue
 		}
 
+		// NOTE: think how to beautify such approach.
 		if *dst == "" {
-			io.Copy(ioutil.Discard, e.ReaderCloser)
-			continue
-		}
-
-		if err := write(path, e); err != nil {
-			log.Fatalf("save error: %v", err)
+			if _, err := io.Copy(ioutil.Discard, e.ReaderCloser); err != nil {
+				log.Fatalf("save error: %v", err)
+			}
+		} else {
+			if err := write(path, e); err != nil {
+				log.Fatalf("save error: %v", err)
+			}
 		}
 	}
 }
