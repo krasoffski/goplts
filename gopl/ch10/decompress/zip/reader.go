@@ -27,10 +27,10 @@ func NewReader(f *os.File) ([]*decompress.Entry, error) {
 		}
 		// NOTE: need verify ability to skip reader creation for directories.
 		e := decompress.Entry{
-			ReaderCloser: rc,
-			Name:         zf.Name,
-			IsDir:        zf.FileInfo().IsDir(),
-			Mode:         zf.Mode(),
+			Reader: rc,
+			Name:   zf.Name,
+			IsDir:  zf.FileInfo().IsDir(),
+			Mode:   zf.Mode(),
 		}
 		entries = append(entries, &e)
 	}

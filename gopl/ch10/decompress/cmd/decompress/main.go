@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/krasoffski/goplts/gopl/ch10/decompress"
+	_ "github.com/krasoffski/goplts/gopl/ch10/decompress/tar"
 	_ "github.com/krasoffski/goplts/gopl/ch10/decompress/zip"
 )
 
@@ -50,13 +51,12 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			e.ReaderCloser.Close()
 			continue
 		}
 
 		// NOTE: think how to beautify such approach.
 		if *dst == "" {
-			if _, err := io.Copy(ioutil.Discard, e.ReaderCloser); err != nil {
+			if _, err := io.Copy(ioutil.Discard, e.Reader); err != nil {
 				log.Fatalf("save error: %v", err)
 			}
 		} else {
@@ -73,8 +73,7 @@ func write(path string, e *decompress.Entry) error {
 		return err
 	}
 	defer f.Close()
-	defer e.ReaderCloser.Close()
-	if _, err = io.Copy(f, e.ReaderCloser); err != nil {
+	if _, err = io.Copy(f, e.Reader); err != nil {
 		return err
 	}
 	return nil

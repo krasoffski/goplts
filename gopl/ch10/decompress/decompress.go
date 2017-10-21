@@ -53,10 +53,10 @@ func sniff(r io.Reader) (*format, error) {
 
 // Entry represents basic compressed file within archive.
 type Entry struct {
-	ReaderCloser io.ReadCloser
-	Name         string
-	IsDir        bool
-	Mode         os.FileMode
+	Reader io.Reader
+	Name   string
+	IsDir  bool
+	Mode   os.FileMode
 }
 
 // RegisterFormat registers decompressor for the magic number.
