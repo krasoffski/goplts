@@ -39,6 +39,27 @@ func match(magic string, b []byte) bool {
 	return true
 }
 
+func sniff2(f *os.File) (*format, error) {
+	// get magic from file
+	for _, format := range formats {
+		b := make([]byte, len(format.signature.Magic))
+		_, err := f.ReadAt(b, int64(format.signature.Offset))
+		if err != nil {
+			return nil, err
+		}
+		// reset file position
+		_, err = f.Seek(0, os.SEEK_SET)
+		if err != nil {
+			return nil, err
+		}
+		// return true if magic matches
+		if format.signature.Magic == string(b) {
+			return format, nil
+		}
+	}
+	return nil, ErrFormat
+}
+
 // Sniff determines the format of r's data.
 func sniff(r io.Reader) (*format, error) {
 	reader := bufio.NewReader(r)
@@ -70,7 +91,7 @@ func RegisterFormat(magic string, offset int, d Decompressor) {
 
 // NewReader creates a decompressing reader.
 func NewReader(file *os.File) ([]*Entry, error) {
-	f, err := sniff(file)
+	f, err := sniff2(file)
 	if err != nil {
 		return nil, err
 	}
