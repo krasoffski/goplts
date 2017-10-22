@@ -31,7 +31,7 @@ func NewReader(f *os.File) ([]*decompress.Entry, error) {
 		// NOTE: does not work due to tar reader internal state.
 		e := decompress.Entry{
 			Reader: tr,
-			Name:   header.Name,
+			Header: header.Name,
 			IsDir:  isDir,
 			Mode:   os.FileMode(header.Mode),
 		}

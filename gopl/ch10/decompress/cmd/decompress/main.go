@@ -36,11 +36,7 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, e := range entries {
-		path := filepath.Join(*dst, e.Name)
-		if *verbose {
-			fmt.Println(e.Name)
-		}
-
+		path := filepath.Join(*dst, e.Header)
 		if e.IsDir {
 			// NOTE: think how to beautify such approach.
 			if *dst == "" {
@@ -55,26 +51,30 @@ func main() {
 		}
 
 		// NOTE: think how to beautify such approach.
+		var written int64
 		if *dst == "" {
-			if _, err := io.Copy(ioutil.Discard, e.Reader); err != nil {
-				log.Fatalf("save error: %v", err)
-			}
+			written, err = io.Copy(ioutil.Discard, e.Reader)
 		} else {
-			if err := write(path, e); err != nil {
-				log.Fatalf("save error: %v", err)
-			}
+			written, err = saveToFile(path, e)
+		}
+		if err != nil {
+			log.Fatalf("save error: %v", err)
+		}
+		if *verbose {
+			fmt.Printf("%s [%d]\n", e.Header, written)
 		}
 	}
 }
 
-func write(path string, e *decompress.Entry) error {
+func saveToFile(path string, e *decompress.Entry) (int64, error) {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, e.Mode)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer f.Close()
-	if _, err = io.Copy(f, e.Reader); err != nil {
-		return err
+	written, err := io.Copy(f, e.Reader)
+	if err != nil {
+		return 0, err
 	}
-	return nil
+	return written, nil
 }

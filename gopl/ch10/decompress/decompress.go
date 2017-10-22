@@ -75,9 +75,15 @@ func sniff(r io.Reader) (*format, error) {
 // Entry represents basic compressed file within archive.
 type Entry struct {
 	Reader io.Reader
-	Name   string
+	Header string
 	IsDir  bool
 	Mode   os.FileMode
+}
+
+// MultiPartFile describes minimal interface for interating over compressed files.
+// Using the similar approach as for tar module.
+type MultiPartFile interface {
+	Next() (*Entry, error)
 }
 
 // RegisterFormat registers decompressor for the magic number.

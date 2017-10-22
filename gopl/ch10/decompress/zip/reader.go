@@ -28,7 +28,7 @@ func NewReader(f *os.File) ([]*decompress.Entry, error) {
 		// NOTE: need verify ability to skip reader creation for directories.
 		e := decompress.Entry{
 			Reader: rc,
-			Name:   zf.Name,
+			Header: zf.Name,
 			IsDir:  zf.FileInfo().IsDir(),
 			Mode:   zf.Mode(),
 		}
