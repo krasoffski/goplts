@@ -2,13 +2,41 @@ package zip
 
 import (
 	"archive/zip"
+	"io"
 	"os"
 
 	"github.com/krasoffski/goplts/gopl/ch10/decompress"
 )
 
+type zipReader struct {
+	reader *zip.Reader
+	index  int
+}
+
+func (zr *zipReader) Next() (*decompress.Entry, error) {
+	if zr.index >= len(zr.reader.File) {
+		return nil, io.EOF
+	}
+
+	zf := zr.reader.File[zr.index]
+	zr.index++ // index for next iteration, increasing here for next file attempt
+
+	rc, err := zf.Open() // entry is represent compressed file
+	if err != nil {
+		return nil, err
+	}
+	// NOTE: need verify ability to skip reader creation for directories.
+	e := decompress.Entry{
+		Reader: rc,
+		Header: zf.Name,
+		IsDir:  zf.FileInfo().IsDir(),
+		Mode:   zf.Mode(),
+	}
+	return &e, nil
+}
+
 // NewReader create a zip reader from the File.
-func NewReader(f *os.File) ([]*decompress.Entry, error) {
+func NewReader(f *os.File) (decompress.MultiPartFile, error) {
 	stat, err := f.Stat()
 	if err != nil {
 		return nil, err
@@ -17,24 +45,7 @@ func NewReader(f *os.File) ([]*decompress.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	// storing compressed file readers in the slice of interfaces
-	entries := make([]*decompress.Entry, 0, len(zr.File))
-	// zip file contains a number of individual files/readers
-	for _, zf := range zr.File {
-		rc, err := zf.Open() // entry is represent compressed file
-		if err != nil {
-			return nil, err
-		}
-		// NOTE: need verify ability to skip reader creation for directories.
-		e := decompress.Entry{
-			Reader: rc,
-			Header: zf.Name,
-			IsDir:  zf.FileInfo().IsDir(),
-			Mode:   zf.Mode(),
-		}
-		entries = append(entries, &e)
-	}
-	return entries, nil
+	return &zipReader{reader: zr}, nil
 }
 
 func init() {

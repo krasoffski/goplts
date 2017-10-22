@@ -11,7 +11,7 @@ import (
 
 	"github.com/krasoffski/goplts/gopl/ch10/decompress"
 	_ "github.com/krasoffski/goplts/gopl/ch10/decompress/tar"
-	// _ "github.com/krasoffski/goplts/gopl/ch10/decompress/zip"
+	_ "github.com/krasoffski/goplts/gopl/ch10/decompress/zip"
 )
 
 func main() {
