@@ -1,4 +1,4 @@
-package zip
+package tar
 
 import (
 	"archive/tar"
@@ -31,7 +31,7 @@ func (tr *tarReader) Next() (*decompress.Entry, error) {
 	return &e, nil
 }
 
-// NewReader create a zip reader from the File.
+// NewReader create a tar reader from the File.
 func NewReader(f *os.File) (decompress.MultiPartFile, error) {
 	tr := tar.NewReader(f)
 	return &tarReader{reader: tr}, nil

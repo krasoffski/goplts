@@ -16,7 +16,7 @@ type Signature struct {
 }
 
 // Decompressor creates a reader form the file parameter
-type Decompressor func(*os.File) (MultiPartFile, error) // not memory efficient
+type Decompressor func(*os.File) (MultiPartFile, error)
 
 type format struct {
 	signature    Signature
