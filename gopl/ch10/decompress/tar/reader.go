@@ -11,6 +11,7 @@ type tarReader struct {
 	reader *tar.Reader
 }
 
+// Next returns Entry with Reader or EOF if there is no more entries.
 func (tr *tarReader) Next() (*decompress.Entry, error) {
 	header, err := tr.reader.Next()
 	if err != nil {
