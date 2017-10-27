@@ -13,6 +13,7 @@ type zipReader struct {
 	index  int
 }
 
+// Next returns Entry with Reader or EOF if there is no more entries.
 func (zr *zipReader) Next() (*decompress.Entry, error) {
 	if zr.index >= len(zr.reader.File) {
 		return nil, io.EOF
