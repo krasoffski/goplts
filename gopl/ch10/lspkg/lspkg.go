@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
@@ -15,5 +16,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(out))
+	deps := struct{ Deps []string }{}
+	if err := json.Unmarshal(out, &deps); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(deps.Deps)
 }
