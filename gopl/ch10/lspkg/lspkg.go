@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"sort"
+	"strings"
 )
 
 func deps(name string) []string {
@@ -13,7 +15,7 @@ func deps(name string) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	out, err := exec.Command(binary, "list", "-json").Output()
+	out, err := exec.Command(binary, "list", "-json", name).Output()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,14 +27,26 @@ func deps(name string) []string {
 }
 
 func walk(seen map[string]bool, name string) {
-
+	ok := seen[name]
+	if ok {
+		return
+	}
+	seen[name] = true
+	for _, pkg := range deps(name) {
+		walk(seen, pkg)
+	}
 }
 
 func main() {
 	flag.Parse()
 	packages := flag.Args()
 	_ = packages
-	// var seen map[string]bool
-
-	fmt.Println(deps(packages[0]))
+	seen := make(map[string]bool)
+	walk(seen, packages[0])
+	out := make([]string, 0, len(seen))
+	for k := range seen {
+		out = append(out, k)
+	}
+	out = sort.StringSlice(out)
+	fmt.Println(strings.Join(out, "\n"))
 }
