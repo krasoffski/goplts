@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func deps(name string) []string {
+func imports(name string) []string {
 	binary, err := exec.LookPath("go")
 	if err != nil {
 		log.Fatal(err)
@@ -19,11 +19,11 @@ func deps(name string) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	properties := struct{ Deps []string }{}
+	properties := struct{ Imports []string }{}
 	if err := json.Unmarshal(out, &properties); err != nil {
 		log.Fatal(err)
 	}
-	return properties.Deps
+	return properties.Imports
 }
 
 func walk(seen map[string]bool, name string) {
@@ -32,7 +32,7 @@ func walk(seen map[string]bool, name string) {
 		return
 	}
 	seen[name] = true
-	for _, pkg := range deps(name) {
+	for _, pkg := range imports(name) {
 		walk(seen, pkg)
 	}
 }
@@ -41,10 +41,10 @@ func main() {
 	flag.Parse()
 	packages := flag.Args()
 	_ = packages
-	seen := make(map[string]bool)
-	walk(seen, packages[0])
-	out := make([]string, 0, len(seen))
-	for k := range seen {
+	deps := make(map[string]bool)
+	walk(deps, packages[0])
+	out := make([]string, 0, len(deps))
+	for k := range deps {
 		out = append(out, k)
 	}
 	out = sort.StringSlice(out)
