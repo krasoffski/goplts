@@ -6,47 +6,51 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"sort"
-	"strings"
 )
 
-func imports(name string) []string {
-	binary, err := exec.LookPath("go")
+var binaryPath string
+
+func init() {
+	var err error
+	binaryPath, err = exec.LookPath("go")
 	if err != nil {
 		log.Fatal(err)
 	}
-	out, err := exec.Command(binary, "list", "-json", name).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	properties := struct{ Imports []string }{}
-	if err := json.Unmarshal(out, &properties); err != nil {
-		log.Fatal(err)
-	}
-	return properties.Imports
 }
 
-func walk(seen map[string]bool, name string) {
-	ok := seen[name]
-	if ok {
-		return
+type properties struct {
+	Name       string
+	ImportPath string
+	Deps       []string
+}
+
+func getProperties(name string) (*properties, error) {
+	out, err := exec.Command(binaryPath, "list", "-json", name).Output()
+	if err != nil {
+		return nil, err
 	}
-	seen[name] = true
-	for _, pkg := range imports(name) {
-		walk(seen, pkg)
+	var p properties
+	if err := json.Unmarshal(out, &p); err != nil {
+		return nil, err
 	}
+	return &p, nil
 }
 
 func main() {
 	flag.Parse()
 	packages := flag.Args()
-	_ = packages
-	deps := make(map[string]bool)
-	walk(deps, packages[0])
-	out := make([]string, 0, len(deps))
-	for k := range deps {
-		out = append(out, k)
+	if len(packages) <= 0 {
+		log.Fatal("please, specify package name")
 	}
-	out = sort.StringSlice(out)
-	fmt.Println(strings.Join(out, "\n"))
+	dependencies := make(map[string]int)
+	for _, p := range packages {
+		prop, err := getProperties(p)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, d := range prop.Deps {
+			dependencies[d]++
+		}
+	}
+	fmt.Println(dependencies)
 }
