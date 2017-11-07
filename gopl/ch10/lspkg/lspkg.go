@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 var binaryPath string
@@ -36,21 +38,52 @@ func getProperties(name string) (*properties, error) {
 	return &p, nil
 }
 
-func main() {
-	flag.Parse()
-	packages := flag.Args()
-	if len(packages) <= 0 {
-		log.Fatal("please, specify package name")
+func getPackages(workspace string) ([]string, error) {
+	dir := filepath.Join(workspace, "...")
+	out, err := exec.Command(binaryPath, "list", dir).Output()
+	if err != nil {
+		return nil, err
 	}
-	dependencies := make(map[string]int)
-	for _, p := range packages {
-		prop, err := getProperties(p)
+	return strings.Split(string(out), "\n"), nil
+}
+
+func getDependencies(name string) (map[string]bool, error) {
+	out, err := exec.Command(binaryPath, "list", "-json", name).Output()
+	if err != nil {
+		return nil, err
+	}
+	var p struct{ Deps []string }
+	if err := json.Unmarshal(out, &p); err != nil {
+		return nil, err
+	}
+	deps := make(map[string]bool)
+	for _, pkg := range p.Deps {
+		deps[pkg] = true
+	}
+	return deps, nil
+}
+
+func main() {
+	workspace := flag.String("ws", "", "workspace path")
+	flag.Parse()
+	lsPackages := flag.Args()
+	if len(lsPackages) <= 0 {
+		log.Fatal("please, specify package names")
+	}
+	wsPackages, err := getPackages(*workspace)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, p := range wsPackages {
+		deps, err := getDependencies(p)
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, d := range prop.Deps {
-			dependencies[d]++
+		for _, lsPkg := range lsPackages {
+			if deps[lsPkg] {
+				fmt.Println(p)
+				break
+			}
 		}
 	}
-	fmt.Println(dependencies)
 }
