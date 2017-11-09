@@ -39,12 +39,15 @@ func getProperties(name string) (*properties, error) {
 }
 
 func getPackages(workspace string) ([]string, error) {
-	dir := filepath.Join(workspace, "...")
+	// dir := filepath.Join(workspace, "...") // does not work with '...'
+	dir := filepath.Clean(workspace) + string(filepath.Separator) + "..."
 	out, err := exec.Command(binaryPath, "list", dir).Output()
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(string(out), "\n"), nil
+	// TODO: improve this.
+	str := strings.TrimSpace(string(out))
+	return strings.Split(str, "\n"), nil
 }
 
 func getDependencies(name string) (map[string]bool, error) {
@@ -64,13 +67,12 @@ func getDependencies(name string) (map[string]bool, error) {
 }
 
 func main() {
-	workspace := flag.String("ws", "", "workspace path")
 	flag.Parse()
 	lsPackages := flag.Args()
 	if len(lsPackages) <= 0 {
 		log.Fatal("please, specify package names")
 	}
-	wsPackages, err := getPackages(*workspace)
+	wsPackages, err := getPackages(".")
 	if err != nil {
 		log.Fatal(err)
 	}
