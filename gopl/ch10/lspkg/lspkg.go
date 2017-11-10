@@ -49,6 +49,17 @@ func getDependencies(name string) (map[string]bool, error) {
 	return deps, nil
 }
 
+func getUsedPackages(deps map[string]bool, packages []string) []string {
+	used := make([]string, 0)
+	for _, pkg := range packages {
+		if !deps[pkg] {
+			continue
+		}
+		used = append(used, pkg)
+	}
+	return used
+}
+
 func main() {
 	flag.Parse()
 	lsPackages := flag.Args()
@@ -66,11 +77,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, lsPkg := range lsPackages {
-			if deps[lsPkg] {
-				fmt.Printf("%s - %s\n", p, lsPkg)
-				break
-			}
+		used := getUsedPackages(deps, lsPackages)
+		if len(used) > 0 {
+			fmt.Printf("%s: [%s]\n", p, strings.Join(used, ", "))
 		}
 	}
 }
