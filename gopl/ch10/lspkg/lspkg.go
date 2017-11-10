@@ -80,19 +80,19 @@ func main() {
 		log.Fatal("please, specify package names")
 	}
 
-	lsPackages := unique(args)
+	argPkgs := unique(args)
 
-	wsPackages, err := getPackages(".")
+	workspacePkgs, err := getPackages(".")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, p := range wsPackages {
+	for _, p := range workspacePkgs {
 		deps, err := getDependencies(p)
 		if err != nil {
 			log.Fatal(err)
 		}
-		used := getUsedPackages(deps, lsPackages)
+		used := getUsedPackages(deps, argPkgs)
 		if len(used) > 0 {
 			fmt.Printf("%s: [%s]\n", p, strings.Join(used, ", "))
 		}
