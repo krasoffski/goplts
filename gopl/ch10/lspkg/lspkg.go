@@ -60,12 +60,27 @@ func getUsedPackages(deps map[string]bool, packages []string) []string {
 	return used
 }
 
+func unique(in []string) []string {
+	seen := make(map[string]bool)
+	out := make([]string, 0, len(in)) // think about in-place modification
+	for _, item := range in {
+		if seen[item] {
+			continue
+		}
+		seen[item] = true
+		out = append(out, item)
+	}
+	return out
+}
+
 func main() {
 	flag.Parse()
-	lsPackages := flag.Args()
-	if len(lsPackages) <= 0 {
+	args := flag.Args()
+	if len(args) <= 0 {
 		log.Fatal("please, specify package names")
 	}
+
+	lsPackages := unique(args)
 
 	wsPackages, err := getPackages(".")
 	if err != nil {
