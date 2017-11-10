@@ -14,28 +14,9 @@ var binaryPath string
 
 func init() {
 	var err error
-	binaryPath, err = exec.LookPath("go")
-	if err != nil {
+	if binaryPath, err = exec.LookPath("go"); err != nil {
 		log.Fatal(err)
 	}
-}
-
-type properties struct {
-	Name       string
-	ImportPath string
-	Deps       []string
-}
-
-func getProperties(name string) (*properties, error) {
-	out, err := exec.Command(binaryPath, "list", "-json", name).Output()
-	if err != nil {
-		return nil, err
-	}
-	var p properties
-	if err := json.Unmarshal(out, &p); err != nil {
-		return nil, err
-	}
-	return &p, nil
 }
 
 func getPackages(workspace string) ([]string, error) {
@@ -55,10 +36,12 @@ func getDependencies(name string) (map[string]bool, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var p struct{ Deps []string }
 	if err := json.Unmarshal(out, &p); err != nil {
 		return nil, err
 	}
+
 	deps := make(map[string]bool)
 	for _, pkg := range p.Deps {
 		deps[pkg] = true
@@ -72,10 +55,12 @@ func main() {
 	if len(lsPackages) <= 0 {
 		log.Fatal("please, specify package names")
 	}
+
 	wsPackages, err := getPackages(".")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, p := range wsPackages {
 		deps, err := getDependencies(p)
 		if err != nil {
@@ -83,7 +68,7 @@ func main() {
 		}
 		for _, lsPkg := range lsPackages {
 			if deps[lsPkg] {
-				fmt.Println(p)
+				fmt.Printf("%s - %s\n", p, lsPkg)
 				break
 			}
 		}
