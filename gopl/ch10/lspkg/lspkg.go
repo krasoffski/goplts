@@ -74,7 +74,7 @@ func unique(in []string) []string {
 }
 
 func main() {
-	workspacePath := flag.String("workspace", ".", "workspace relative path")
+	wsPath := flag.String("workspace", ".", "workspace relative path")
 	flag.Parse()
 	args := flag.Args()
 	if len(args) <= 0 {
@@ -83,12 +83,12 @@ func main() {
 
 	argPkgs := unique(args)
 
-	workspacePkgs, err := getPackages(*workspacePath)
+	wsPkgs, err := getPackages(*wsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, p := range workspacePkgs {
+	for _, p := range wsPkgs {
 		deps, err := getDependencies(p)
 		if err != nil {
 			log.Fatal(err)
