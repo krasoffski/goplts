@@ -2,15 +2,14 @@ package charcount
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"os"
 	"unicode"
 )
 
 type isfunc func(rune) bool
 
-func Charcounter(reader io.Reader) (map[string]int, error) {
+//
+func Counter(reader io.Reader) (map[string]int, error) {
 
 	counts := map[string]int{}
 

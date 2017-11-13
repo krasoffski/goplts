@@ -17,7 +17,7 @@ import (
 
 func main() {
 
-	counts, err := charcount.Charcounter(os.Stdin)
+	counts, err := charcount.Counter(os.Stdin)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "charcount: %s", err)
 		os.Exit(1)
