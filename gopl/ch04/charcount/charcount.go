@@ -8,7 +8,7 @@ import (
 
 type isfunc func(rune) bool
 
-//
+// Counter counts number of repeating characters in the stream.
 func Counter(reader io.Reader) (map[string]int, error) {
 
 	counts := map[string]int{}

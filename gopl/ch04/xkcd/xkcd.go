@@ -122,18 +122,12 @@ func (c *Cache) Search(arr []string) map[int]*Info {
 
 // Load reads cache represented as JSON from Reader and unmarshal them to Cache.
 func (c *Cache) Load(r io.Reader) error {
-	if err := json.NewDecoder(r).Decode(c); err != nil {
-		return err
-	}
-	return nil
+	return json.NewDecoder(r).Decode(c)
 }
 
 // Dump writes Cache marshaled as JSON to Writer.
 func (c *Cache) Dump(w io.Writer) error {
-	if err := json.NewEncoder(w).Encode(c); err != nil {
-		return err
-	}
-	return nil
+	return json.NewEncoder(w).Encode(c)
 }
 
 // NewCache creates new pointer to Cache structure and initializes internal map.

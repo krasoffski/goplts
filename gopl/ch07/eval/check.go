@@ -7,15 +7,18 @@ import (
 
 var numParams = map[string]int{"pow": 2, "sin": 1, "sqrt": 1}
 
+// Check verifies that variable meets requriments.
 func (v Var) Check(vars map[Var]bool) error {
 	vars[v] = true
 	return nil
 }
 
+// Check verifies that literal meets requriments.
 func (literal) Check(vars map[Var]bool) error {
 	return nil
 }
 
+// Check verifies that unary meets requriments.
 func (u unary) Check(vars map[Var]bool) error {
 	if !strings.ContainsRune("+-", u.op) {
 		return fmt.Errorf("unexpected unary op %q", u.op)
@@ -23,6 +26,7 @@ func (u unary) Check(vars map[Var]bool) error {
 	return u.x.Check(vars)
 }
 
+// Check verifies that binary meets requriments.
 func (b binary) Check(vars map[Var]bool) error {
 	if !strings.ContainsRune("+-*/", b.op) {
 		return fmt.Errorf("unexpected binary op %q", b.op)
@@ -33,6 +37,7 @@ func (b binary) Check(vars map[Var]bool) error {
 	return b.y.Check(vars)
 }
 
+// Check verifies that call meets requriments.
 func (c call) Check(vars map[Var]bool) error {
 	arity, ok := numParams[c.fn]
 	if !ok {
@@ -50,6 +55,7 @@ func (c call) Check(vars map[Var]bool) error {
 	return nil
 }
 
+// Check verifies that min meets requriments.
 func (m min) Check(vars map[Var]bool) error {
 	if len(m.args) < 1 {
 		return fmt.Errorf("call to min has %d args, want 1 or more",
